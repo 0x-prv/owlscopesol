@@ -139,7 +139,13 @@ export async function getTokenIntelligence(
         holderCount: asNullableNumber(snapshotRow.holder_count),
         liquidityUsd: asNullableNumber(snapshotRow.liquidity_usd),
         volume24hUsd: asNullableNumber(snapshotRow.volume_24h_usd),
-        topHolders: asUnknownArray(snapshotRow.top_holders),
+        topHolders: asUnknownArray(snapshotRow.top_holders).flatMap((holder) => {
+          if (typeof holder !== "object" || holder === null || Array.isArray(holder)) return [];
+          const candidate = holder as Record<string, unknown>;
+          const address = asNullableString(candidate.address);
+          const amount = asNullableString(candidate.amount);
+          return address && amount ? [{ address, amount }] : [];
+        }),
         source: asNullableString(snapshotRow.source),
         capturedAt: asNullableString(snapshotRow.snapshot_at),
       }

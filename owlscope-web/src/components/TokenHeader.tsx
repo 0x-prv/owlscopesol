@@ -25,6 +25,9 @@ export default function TokenHeader({ token, snapshot }: TokenHeaderProps) {
 
   const mintRenounced = token.mintAuthority === null;
   const freezeRenounced = token.freezeAuthority === null;
+  const hasHeliusMetadata = Boolean(token.metadata?.raw_supply);
+  const mintAvailable = hasHeliusMetadata || token.mintAuthority !== null;
+  const freezeAvailable = hasHeliusMetadata || token.freezeAuthority !== null;
 
   return (
     <div className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-start sm:justify-between">
@@ -70,8 +73,8 @@ export default function TokenHeader({ token, snapshot }: TokenHeaderProps) {
         </button>
 
         <div className="flex flex-wrap gap-2 pt-1">
-          <AuthorityBadge label="Mint authority" renounced={mintRenounced} />
-          <AuthorityBadge label="Freeze authority" renounced={freezeRenounced} />
+          <AuthorityBadge label="Mint authority" renounced={mintRenounced} available={mintAvailable} />
+          <AuthorityBadge label="Freeze authority" renounced={freezeRenounced} available={freezeAvailable} />
         </div>
       </div>
 
@@ -89,19 +92,21 @@ export default function TokenHeader({ token, snapshot }: TokenHeaderProps) {
 function AuthorityBadge({
   label,
   renounced,
+  available,
 }: {
   label: string;
   renounced: boolean;
+  available: boolean;
 }) {
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
       style={{
-        backgroundColor: renounced ? "var(--risk-low-bg)" : "var(--risk-medium-bg)",
-        color: renounced ? "var(--risk-low)" : "var(--risk-medium)",
+        backgroundColor: !available ? "var(--risk-unknown-bg)" : renounced ? "var(--risk-low-bg)" : "var(--risk-medium-bg)",
+        color: !available ? "var(--risk-unknown)" : renounced ? "var(--risk-low)" : "var(--risk-medium)",
       }}
     >
-      {label}: {renounced ? "renounced" : "active"}
+      {label}: {!available ? "Unavailable" : renounced ? "renounced" : "active"}
     </span>
   );
 }
