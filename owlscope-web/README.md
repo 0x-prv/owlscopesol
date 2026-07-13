@@ -70,3 +70,57 @@ Successful responses contain `success: true`, typed token identity, snapshot, de
 - Total holder count is not provided by the current data source.
 - Liquidity, 24h volume, wallet history, developer behavior, and trading recommendations are not evaluated.
 - If Helius, Jupiter, Supabase, or Groq fail, returned fields remain unavailable and warnings state which provider operation failed.
+
+## Ecosystem discovery milestone
+
+OwlScope now includes a modular server-only ingestion layer under `src/lib/server/providers`. Every provider implements the common `TokenDiscoveryProvider` contract from `providers/types.ts` and can be enabled, disabled, or replaced without coupling to another provider. Current adapters cover Helius lookup, Jupiter token list and price data, DexScreener listings/pairs, optional Birdeye listings when `BIRDEYE_API_KEY` is present, and Pump.fun launches.
+
+### Worker architecture
+
+`src/lib/server/discovery/token-discovery-service.ts` is the background-worker boundary. It runs each enabled provider independently, catches provider failures, persists real discoveries, queues scan jobs, and exposes helpers for queued analysis. The first API trigger is `POST /api/discover`; deployments can call it from a cron, queue worker, or Supabase Edge schedule.
+
+### Database
+
+The ecosystem schema is documented as SQL in `supabase/migrations/20260713000000_ecosystem_coverage.sql`. It adds:
+
+- `tokens`
+- `token_sources`
+- `token_discovery_events`
+- `token_scan_jobs`
+- `token_metadata_cache`
+- `scan_history`
+- `watchlists`
+- `alerts`
+
+Existing `token_snapshots` and `risk_reports` remain the analysis-report tables.
+
+### Search flow
+
+The search bar accepts mint addresses, symbols, names, partial text, and provider-backed live lookups. `/api/search` queries Supabase first. If there is no local match, it attempts live lookup through providers and persists a real analysis result for mint-backed matches. If no source returns data, the UI returns a clear no-match message instead of fabricated results.
+
+### Discovery flow
+
+Discovery reads real public/authorized sources only. Each provider returns typed `DiscoveredToken` records with source metadata. Failures are isolated per provider, so one outage does not block other sources. New discoveries are written to `tokens`, `token_sources`, `token_discovery_events`, `token_metadata_cache`, and `token_scan_jobs`.
+
+### Refresh flow
+
+Queued jobs are represented in `token_scan_jobs`. `analyzeQueuedTokens()` runs the existing deterministic token pipeline for queued work. Future refresh workers can reuse the same job table for metadata, price, holders, AI, cleanup, and retry jobs.
+
+### API routes
+
+- `GET /api/token/[mint]` — run/persist analysis for a mint.
+- `GET /api/search?q=` — search Supabase first, then live providers.
+- `POST /api/discover` — run one discovery cycle.
+- `GET /api/new` — newest persisted discoveries.
+- `GET /api/trending` — real persisted market/risk signals only.
+
+### UI pages
+
+- `/` — Analyze/search.
+- `/new` — Newest real discoveries.
+- `/trending` — Real persisted signal view.
+- `/token/[mint]` — Token intelligence report.
+
+### Remaining limitations
+
+Trending is intentionally conservative: it only exposes real persisted signals and does not invent popularity. Alert delivery and authenticated watchlists have schema support but still require productized auth, notification channels, and dedicated worker scheduling.
