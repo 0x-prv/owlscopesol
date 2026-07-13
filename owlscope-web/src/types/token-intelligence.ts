@@ -19,7 +19,7 @@ export type TokenSnapshot = {
   holderCount: number | null;
   liquidityUsd: number | null;
   volume24hUsd: number | null;
-  topHolders: unknown[];
+  topHolders: { address: string; amount: string }[];
   source: string | null;
   capturedAt: string | null;
 };
@@ -52,5 +52,55 @@ export type TokenIntelligenceResponse = {
   metadata: {
     lastUpdated: string | null;
     sources: string | null;
+    warnings?: string[];
   };
 };
+export type DataAvailabilityWarning = {
+  provider: string;
+  operation: string;
+  message: string;
+};
+
+export type TokenAnalysisApiResult = {
+  token: {
+    id: string;
+    mintAddress: string;
+    symbol: string | null;
+    name: string | null;
+    decimals: number | null;
+    supply: string | null;
+    mintAuthority: string | null;
+    freezeAuthority: string | null;
+  };
+  snapshot: {
+    id: string;
+    priceUsd: number | null;
+    marketCapUsd: number | null;
+    topHolders: { address: string; amount: string }[];
+    capturedAt: string;
+    source: string;
+  };
+  risk: {
+    id: string;
+    overallRiskScore: number | null;
+    overallRiskLabel: "Low" | "Medium" | "High" | "Unknown";
+    confidence: number;
+    findings: string[];
+    caveats: string[];
+    factors: unknown;
+  };
+  ai: {
+    headline: string;
+    summary: string;
+    findings: string[];
+    limitations: string[];
+    provider: string;
+    model: string;
+    generatedAt: string;
+  };
+  dataAvailabilityWarnings: DataAvailabilityWarning[];
+};
+
+export type TokenAnalysisApiResponse =
+  | { success: true; data: TokenAnalysisApiResult; warnings: DataAvailabilityWarning[] }
+  | { success: false; error: { code: string; message: string } };

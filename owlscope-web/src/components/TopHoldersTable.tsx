@@ -36,7 +36,7 @@ function computeUiSupply(
 }
 
 type TopHoldersTableProps = {
-  topHolders: unknown[];
+  topHolders: Holder[];
   token: Pick<TokenOverview, "metadata" | "decimals">;
 };
 
@@ -55,7 +55,7 @@ export default function TopHoldersTable({
           Largest holders
         </h2>
         <p className="mt-2 text-sm text-muted">
-          No holder data is available for this token yet.
+          Not provided by current data source.
         </p>
       </section>
     );
@@ -99,7 +99,7 @@ export default function TopHoldersTable({
                   )}
                 </span>
                 <span className="w-14 text-right font-mono text-xs text-muted">
-                  {percentage !== null ? formatPercent(percentage) : "—"}
+                  {percentage !== null ? formatPercent(percentage) : "Unavailable"}
                 </span>
               </div>
             </li>
