@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+:root {
+  /* Base surfaces */
+  --background: #ffffff;
+  --surface: #f7f8fa;
+  --foreground: #10131a;
+  --muted: #5b6270;
+  --border: #e4e7eb;
+
+  /* Accent — signal blue, used for links/CTA/focus */
+  --accent: #3552ff;
+  --accent-foreground: #ffffff;
+
+  /* Risk semantics — deliberately muted, not alarm-neon */
+  --risk-low: #1a8754;
+  --risk-low-bg: #eaf6ef;
+  --risk-medium: #b27c12;
+  --risk-medium-bg: #fbf3e2;
+  --risk-high: #c42b3d;
+  --risk-high-bg: #fbe9eb;
+  --risk-unknown: #5b6270;
+  --risk-unknown-bg: #eef0f2;
+
+  /* Fonts — safe system fallbacks; Google Fonts optional, loaded at runtime */
+  --font-display:
+    "Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    sans-serif;
+  --font-sans:
+    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:
+    "IBM Plex Mono", ui-monospace, "SF Mono", "Cascadia Code", Menlo,
+    Consolas, monospace;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-risk-low: var(--risk-low);
+  --color-risk-low-bg: var(--risk-low-bg);
+  --color-risk-medium: var(--risk-medium);
+  --color-risk-medium-bg: var(--risk-medium-bg);
+  --color-risk-high: var(--risk-high);
+  --color-risk-high-bg: var(--risk-high-bg);
+  --color-risk-unknown: var(--risk-unknown);
+  --color-risk-unknown-bg: var(--risk-unknown-bg);
+
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
