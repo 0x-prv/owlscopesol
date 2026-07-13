@@ -1,6 +1,9 @@
 import Link from "next/link";
 import SearchBar from "@/components/SearchBar";
-import { EventCard, type BehaviorEventListItem } from "@/components/EventCard";
+import {
+  EventCard,
+  type BehaviorEventListItem,
+} from "@/components/EventCard";
 import { supabaseAdmin } from "@/lib/supabase-server";
 
 export const revalidate = 30;
@@ -16,13 +19,19 @@ function asNullableString(value: unknown): string | null {
 }
 
 function asNumber(value: unknown, fallback = 0): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : fallback;
 }
 
-async function getEvents(filter: string): Promise<BehaviorEventListItem[]> {
+async function getEvents(
+  filter: string,
+): Promise<BehaviorEventListItem[]> {
   let query = supabaseAdmin
     .from("behavior_events")
-    .select("id, event_type, severity, confidence, title, summary, detected_at, tokens(symbol, mint_address)")
+    .select(
+      "id, event_type, severity, confidence, title, summary, detected_at, tokens(symbol, mint_address)",
+    )
     .order("detected_at", { ascending: false })
     .limit(50);
 
@@ -33,7 +42,11 @@ async function getEvents(filter: string): Promise<BehaviorEventListItem[]> {
   const { data, error } = await query;
 
   if (error) {
-    console.error("[homepage] failed to load behavior_events:", error.message);
+    console.error(
+      "[homepage] failed to load behavior_events:",
+      error.message,
+    );
+
     return [];
   }
 
@@ -42,21 +55,29 @@ async function getEvents(filter: string): Promise<BehaviorEventListItem[]> {
     const title = asNullableString(row.title);
     const summary = asNullableString(row.summary);
     const detectedAt = asNullableString(row.detected_at);
-    if (!id || !title || !summary || !detectedAt) return [];
 
-    const tokenRow = Array.isArray(row.tokens) ? row.tokens[0] : row.tokens;
+    if (!id || !title || !summary || !detectedAt) {
+      return [];
+    }
+
+    const tokenRow = Array.isArray(row.tokens)
+      ? row.tokens[0]
+      : row.tokens;
 
     return [
       {
         id,
-        eventType: asNullableString(row.event_type) ?? "unknown",
+        eventType:
+          asNullableString(row.event_type) ?? "unknown",
         severity: asNumber(row.severity, 1),
         confidence: asNumber(row.confidence, 0),
         title,
         summary,
         detectedAt,
         tokenSymbol: asNullableString(tokenRow?.symbol),
-        tokenMintAddress: asNullableString(tokenRow?.mint_address),
+        tokenMintAddress: asNullableString(
+          tokenRow?.mint_address,
+        ),
       } satisfies BehaviorEventListItem,
     ];
   });
@@ -68,38 +89,53 @@ export default async function HomePage({
   searchParams: Promise<{ filter?: string }>;
 }) {
   const { filter = "all" } = await searchParams;
-  const events = await getEvents(filter);
+
+  const validFilter = FILTERS.some(
+    (item) => item.value === filter,
+  )
+    ? filter
+    : "all";
+
+  const events = await getEvents(validFilter);
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
       <div className="mb-6 flex flex-col gap-2">
-        <h1 className="font-display text-2xl font-semibold text-foreground">OwlScope</h1>
+        <h1 className="font-display text-2xl font-semibold text-foreground">
+          OwlScope
+        </h1>
+
         <p className="text-sm text-muted">
-          Live Solana behavior events — no trading signals, no hype.
+          Live Solana behavior events. No trading signals, no hype.
         </p>
       </div>
 
-      <div className="mb-5">
+      <div className="mb-3">
         <SearchBar />
       </div>
 
-<<<<<<< HEAD
-      <p className="text-xs text-muted">
-        Search by mint, symbol, or name. OwlScope uses persisted intelligence first, then live provider lookup when needed — no fake rankings, no hype.
+      <p className="mb-5 text-xs text-muted">
+        Search by mint, symbol, or name. OwlScope uses persisted
+        intelligence first, then live provider lookup when needed.
+        No fake rankings, no hype.
       </p>
-=======
+
       <nav className="mb-5 flex flex-wrap gap-2">
-        {FILTERS.map((f) => (
+        {FILTERS.map((item) => (
           <Link
-            key={f.value}
-            href={f.value === "all" ? "/" : `/?filter=${f.value}`}
+            key={item.value}
+            href={
+              item.value === "all"
+                ? "/"
+                : `/?filter=${item.value}`
+            }
             className={`rounded-lg border px-3 py-1.5 text-sm transition ${
-              filter === f.value
+              validFilter === item.value
                 ? "border-accent bg-accent/10 font-medium text-accent"
                 : "border-border text-muted hover:border-accent/40"
             }`}
           >
-            {f.label}
+            {item.label}
           </Link>
         ))}
       </nav>
@@ -115,7 +151,6 @@ export default async function HomePage({
           ))}
         </div>
       )}
->>>>>>> 1a5e843 (feat: add behavior detection and cron event pipeline)
     </main>
   );
 }
