@@ -18,8 +18,7 @@ export default function HomePage() {
       </div>
 
       <p className="text-xs text-muted">
-        Paste any Solana token mint address to get a deterministic risk
-        report — no trading signals, no hype.
+        Search by mint, symbol, or name. OwlScope uses persisted intelligence first, then live provider lookup when needed — no fake rankings, no hype.
       </p>
     </main>
   );
