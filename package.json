@@ -1,6 +1,15 @@
 {
+  "private": true,
+  "scripts": {
+    "build": "npm run build --prefix owlscope-web",
+    "lint": "npm run lint --prefix owlscope-web",
+    "typecheck": "npm run typecheck --prefix owlscope-web"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.2",
     "zod": "^4.4.3"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

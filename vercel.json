@@ -1,0 +1,4 @@
+{
+  "installCommand": "npm ci --prefix owlscope-web",
+  "buildCommand": "npm run build"
+}
