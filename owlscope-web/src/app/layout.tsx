@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import "./globals.css";
 
@@ -18,7 +19,8 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans">
         <header className="border-b border-border">
           <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-            <Link href="/" className="font-display text-lg font-semibold">
+            <Link href="/" className="flex items-center gap-2 font-display text-lg font-semibold">
+              <Image src="/owlslogo.jpg" alt="OwlScope" width={28} height={28} className="rounded-md" />
               OwlScope
             </Link>
             <div className="flex gap-4 text-sm text-muted">
