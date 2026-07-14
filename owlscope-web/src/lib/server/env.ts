@@ -7,7 +7,7 @@ const serverEnvSchema = z.object({
   GROQ_MODEL: z.string().min(1).default("llama-3.1-8b-instant"),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  CRON_SECRET: z.string().min(32),
+  CRON_SECRET: z.string().min(32).optional(),
 });
 
 export function getServerEnv() {
@@ -17,4 +17,14 @@ export function getServerEnv() {
     throw new Error(`Missing or invalid server environment variables: ${names}`);
   }
   return parsed.data;
+}
+
+export function getCronSecret() {
+  const { CRON_SECRET } = getServerEnv();
+
+  if (!CRON_SECRET) {
+    throw new Error("Missing or invalid server environment variables: CRON_SECRET");
+  }
+
+  return CRON_SECRET;
 }

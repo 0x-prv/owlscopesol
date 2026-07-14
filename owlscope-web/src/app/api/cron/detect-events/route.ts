@@ -1,10 +1,10 @@
 import "server-only";
 import { NextResponse } from "next/server";
-import { getServerEnv } from "@/lib/server/env";
+import { getCronSecret } from "@/lib/server/env";
 import { runDetectionCycle } from "@/lib/server/behavior-detector";
 
 export async function POST(request: Request) {
-  const { CRON_SECRET } = getServerEnv();
+  const CRON_SECRET = getCronSecret();
   const authHeader = request.headers.get("authorization");
 
   if (authHeader !== `Bearer ${CRON_SECRET}`) {
