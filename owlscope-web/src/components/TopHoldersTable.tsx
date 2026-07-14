@@ -53,7 +53,7 @@ export default function TopHoldersTable({
     return (
       <section className="rounded-lg border border-border bg-background p-6">
         <h2 className="font-display text-lg font-semibold text-foreground">
-          Largest holders
+          Top Holders
         </h2>
         <div className="mt-4"><EmptyState icon="◌" title="No holder data available" message="Largest holder data is not provided by the current data source." /></div>
       </section>
@@ -63,7 +63,7 @@ export default function TopHoldersTable({
   return (
     <section className="rounded-lg border border-border bg-background p-6">
       <h2 className="font-display text-lg font-semibold text-foreground">
-        Largest holders
+        Top Holders
       </h2>
       <p className="mt-1 text-sm text-muted">
         Top {holders.length} accounts by balance. This is not the total

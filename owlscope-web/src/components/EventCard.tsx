@@ -51,13 +51,13 @@ export function EventCard({ event }: { event: BehaviorEventListItem }) {
 
   return (
     <Link
-      href={`/event/${event.id}`}
+      href={event.tokenMintAddress ? `/token/${event.tokenMintAddress}` : `/event/${event.id}`}
       className="group block rounded-lg border border-border bg-background px-5 py-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-accent/40 hover:bg-surface/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
     >
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${severity.bg} ${severity.text}`}>
-            severity {severity.label}
+            {severity.label} severity
           </span>
           <span className="rounded-md border border-border px-2 py-0.5 text-xs font-medium text-muted">
             {eventTypeLabel(event.eventType)}
@@ -70,7 +70,7 @@ export function EventCard({ event }: { event: BehaviorEventListItem }) {
         <p className="truncate text-xs font-medium text-muted">{event.tokenName ?? "Unknown token"}{event.tokenSymbol ? ` (${event.tokenSymbol})` : ""}</p>
         <p className="mt-1 text-sm font-semibold leading-5 text-foreground transition-colors group-hover:text-accent">{event.title}</p>
       </div>
-      <p className="mb-3 text-sm leading-6 text-muted">{event.summary}</p>
+      <div className="mb-3 grid gap-3 text-sm leading-6 text-muted sm:grid-cols-3"><p><span className="font-medium text-foreground">What happened?</span><br />{event.title}</p><p><span className="font-medium text-foreground">Why it matters</span><br />{event.summary}</p><p><span className="font-medium text-foreground">Review next</span><br />Open the token analysis for Risk Assessment and AI Interpretation.</p></div>
 
       <div className="flex items-center justify-between gap-3 border-t border-border pt-3 text-xs">
         <div className="flex min-w-0 items-center gap-2">

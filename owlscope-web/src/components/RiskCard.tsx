@@ -56,7 +56,7 @@ export default function RiskCard({ risk }: RiskCardProps) {
     return (
       <section className="rounded-lg border border-border bg-background p-6">
         <h2 className="font-display text-lg font-semibold text-foreground">
-          Overall On-Chain Risk
+          Risk Assessment
         </h2>
         <p className="mt-2 text-sm text-muted">
           No risk report is available for this token yet.
@@ -76,7 +76,7 @@ export default function RiskCard({ risk }: RiskCardProps) {
   return (
     <section className="rounded-lg border border-border bg-background p-6">
       <h2 className="font-display text-lg font-semibold text-foreground">
-        Overall On-Chain Risk
+        Risk Assessment
       </h2>
       <p className="mt-1 text-sm text-muted">
         Computed deterministically from on-chain data. No AI is involved in scoring.
@@ -139,7 +139,7 @@ export default function RiskCard({ risk }: RiskCardProps) {
 
       {parsedFactors && parsedFactors.caveats.length > 0 ? (
         <div className="mt-6 rounded-lg border border-border bg-surface p-4">
-          <p className="mb-1.5 text-xs font-medium text-muted">Known limitations</p>
+          <p className="mb-1.5 text-xs font-medium text-muted">Risk calculation limitations</p>
           <ul className="flex flex-col gap-1">
             {parsedFactors.caveats.map((caveat, index) => (
               <li key={index} className="text-xs leading-5 text-muted">{caveat}</li>
