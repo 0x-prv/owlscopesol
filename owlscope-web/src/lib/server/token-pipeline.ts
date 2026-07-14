@@ -71,11 +71,12 @@ async function upsertToken(mintAddress: string, assetInfo: AssetInfo | undefined
     mint_address: mintAddress,
     name: assetInfo?.name ?? null,
     symbol: assetInfo?.symbol ?? null,
+    logo_url: assetInfo?.logoUrl ?? null,
     decimals: assetInfo?.decimals ?? null,
     mint_authority: assetInfo?.mintAuthority ?? null,
     freeze_authority: assetInfo?.freezeAuthority ?? null,
     last_updated_at: new Date().toISOString(),
-    metadata: { field_sources: { name: "helius_das", symbol: "helius_das", decimals: "helius_das", mint_authority: "helius_das", freeze_authority: "helius_das", raw_supply: "helius_das" }, is_mutable: assetInfo?.isMutable ?? null, raw_supply: assetInfo?.rawSupply ?? null },
+    metadata: { field_sources: { name: "helius_das", symbol: "helius_das", logo_url: "helius_das", decimals: "helius_das", mint_authority: "helius_das", freeze_authority: "helius_das", raw_supply: "helius_das" }, is_mutable: assetInfo?.isMutable ?? null, raw_supply: assetInfo?.rawSupply ?? null },
   }, { onConflict: "mint_address" }).select("id,logo_url").single();
   if (error) throw new Error(`Supabase token upsert failed: ${error.message}`);
   return { id: String(data.id), logoUrl: typeof data.logo_url === "string" && data.logo_url.length > 0 ? data.logo_url : null };
