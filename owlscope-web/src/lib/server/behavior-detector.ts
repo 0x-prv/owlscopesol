@@ -1,5 +1,6 @@
 import "server-only";
 import { getAssetInfo, getTopHolders } from "./helius";
+import { computeTopHolderPct, toUiSupply } from "./risk-engine";
 import { supabaseAdmin } from "./supabase-admin";
 
 // Tuned conservatively for MVP scope — authority + holder concentration only.
@@ -12,30 +13,6 @@ type WatchedToken = {
   mint_address: string;
   symbol: string | null;
 };
-
-function toUiSupply(rawSupply: string | null, decimals: number | null): number | null {
-  if (rawSupply === null || decimals === null || !Number.isFinite(decimals)) return null;
-  try {
-    const uiSupply = Number(BigInt(rawSupply)) / 10 ** decimals;
-    return Number.isFinite(uiSupply) ? uiSupply : null;
-  } catch {
-    return null;
-  }
-}
-
-function computeTop10Pct(
-  topHolders: { address: string; amount: string }[],
-  uiSupply: number | null
-): number | null {
-  if (uiSupply === null || uiSupply <= 0 || topHolders.length === 0) return null;
-  const amounts = topHolders
-    .map((h) => Number(h.amount))
-    .filter((n) => Number.isFinite(n))
-    .sort((a, b) => b - a);
-  if (amounts.length === 0) return null;
-  const top10Sum = amounts.slice(0, 10).reduce((sum, n) => sum + n, 0);
-  return (top10Sum / uiSupply) * 100;
-}
 
 async function insertEvent(params: {
   eventType: "authority_change" | "holder_concentration_spike";
@@ -55,7 +32,7 @@ async function insertEvent(params: {
       token_id: params.tokenId,
       title: params.title,
       summary: params.summary,
-      occurred_at: new Date().toISOString(),
+      detected_at: new Date().toISOString(),
     })
     .select("id")
     .single();
@@ -127,7 +104,7 @@ async function checkAuthorityChange(token: WatchedToken) {
     evidence: {
       evidenceType: "account_state",
       beforeValue: lastSnapshot,
-      afterValue: { mintAuthority: assetInfo.mintAuthority, freezeAuthority: assetInfo.freezeAuthority },
+      afterValue: { mint_authority: assetInfo.mintAuthority, freeze_authority: assetInfo.freezeAuthority },
     },
   });
 }
@@ -146,7 +123,7 @@ async function checkHolderConcentration(token: WatchedToken) {
   }
 
   const uiSupply = toUiSupply(assetInfo.rawSupply, assetInfo.decimals);
-  const currentTop10 = computeTop10Pct(topHolders, uiSupply);
+  const currentTop10 = computeTopHolderPct(topHolders, uiSupply, 10);
   if (currentTop10 === null) return; // insufficient data — do not guess
 
   const { data: lastSnapshot } = await supabaseAdmin

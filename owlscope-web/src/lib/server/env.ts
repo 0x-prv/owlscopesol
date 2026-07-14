@@ -7,7 +7,7 @@ const serverEnvSchema = z.object({
   GROQ_MODEL: z.string().min(1).default("llama-3.1-8b-instant"),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  CRON_SECRET: z.string().min(1),
+  CRON_SECRET: z.string().min(32),
 });
 
 export function getServerEnv() {

@@ -56,7 +56,7 @@ export interface RiskReport {
  * Same approach as market cap computation — BigInt until the final
  * unavoidable float step.
  */
-function toUiSupply(rawSupply: string | null, decimals: number | null): number | null {
+export function toUiSupply(rawSupply: string | null, decimals: number | null): number | null {
   if (rawSupply === null || decimals === null || !Number.isFinite(decimals)) {
     return null;
   }
@@ -68,6 +68,24 @@ function toUiSupply(rawSupply: string | null, decimals: number | null): number |
   }
   const uiSupply = Number(rawSupplyBigInt) / 10 ** decimals;
   return Number.isFinite(uiSupply) ? uiSupply : null;
+}
+
+export function computeTopHolderPct(
+  topHolders: TopHolder[] | undefined,
+  uiSupply: number | null,
+  count: number
+): number | null {
+  if (!topHolders || topHolders.length === 0 || uiSupply === null || uiSupply <= 0) return null;
+
+  const amounts = topHolders
+    .map((h) => Number(h.amount))
+    .filter((n) => Number.isFinite(n))
+    .sort((a, b) => b - a);
+
+  if (amounts.length === 0) return null;
+
+  const holderSum = amounts.slice(0, count).reduce((sum, n) => sum + n, 0);
+  return (holderSum / uiSupply) * 100;
 }
 
 /**
@@ -162,10 +180,20 @@ function evaluateHolderConcentration(
     };
   }
 
-  const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
-  const top1Percent = (amounts[0] / uiSupply) * 100;
-  const top5Percent = (sum(amounts.slice(0, 5)) / uiSupply) * 100;
-  const top10Percent = (sum(amounts.slice(0, 10)) / uiSupply) * 100;
+  const top1Percent = computeTopHolderPct(topHolders, uiSupply, 1);
+  const top5Percent = computeTopHolderPct(topHolders, uiSupply, 5);
+  const top10Percent = computeTopHolderPct(topHolders, uiSupply, 10);
+
+  if (top1Percent === null || top5Percent === null || top10Percent === null) {
+    return {
+      factor: "holder_concentration_risk",
+      category: "holder_concentration",
+      risk_score: null,
+      weight: 0.4,
+      data_available: false,
+      evidence: ["Holder concentration unavailable — holder amounts were not numeric"],
+    };
+  }
 
   let riskScore: number;
   if (top1Percent >= 50) riskScore = 100;
