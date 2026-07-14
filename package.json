@@ -1,4 +1,16 @@
 {
+  "private": true,
+  "workspaces": [
+    "owlscope-web",
+    "owlscope-poc"
+  ],
+  "scripts": {
+    "dev": "npm --workspace owlscope-web run dev",
+    "build": "npm --workspace owlscope-web run build",
+    "start": "npm --workspace owlscope-web run start",
+    "lint": "npm --workspace owlscope-web run lint",
+    "typecheck": "npm --workspace owlscope-web run typecheck"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.2",
     "zod": "^4.4.3"
