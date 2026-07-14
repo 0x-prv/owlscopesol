@@ -3,7 +3,7 @@ import { getAssetInfo, getTopHolders } from "./helius";
 import { computeTopHolderPct, toUiSupply } from "./risk-engine";
 import { supabaseAdmin } from "./supabase-admin";
 
-// Tuned conservatively for MVP scope - authority + holder concentration only.
+// Tuned conservatively for MVP scope — authority + holder concentration only.
 const HOLDER_CONCENTRATION_DELTA_THRESHOLD = 10; // percentage points
 const HOLDER_CONCENTRATION_SEVERITY = 4;
 const AUTHORITY_CHANGE_SEVERITY = 3;
@@ -125,7 +125,7 @@ async function checkHolderConcentration(token: WatchedToken) {
 
   const uiSupply = toUiSupply(assetInfo.rawSupply, assetInfo.decimals);
   const currentTop10 = computeTopHolderPct(topHolders, uiSupply, 10);
-  if (currentTop10 === null) return; // insufficient data - do not guess
+  if (currentTop10 === null) return; // insufficient data — do not guess
 
   const { data: lastSnapshot } = await supabaseAdmin
     .from("holder_snapshots")

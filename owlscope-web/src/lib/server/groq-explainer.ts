@@ -1,11 +1,11 @@
 import "server-only";
 
 /**
- * OwlScope Phase 3 - Groq AI Explanation Layer
+ * OwlScope Phase 3 — Groq AI Explanation Layer
  * ------------------------------------------------------------
  * ARCHITECTURE RULE: the deterministic Risk Engine (risk-engine.ts) is
  * the SOLE authority for score, level, confidence, and factors. This
- * module NEVER recalculates, alters, or overrides any of that - it
+ * module NEVER recalculates, alters, or overrides any of that — it
  * only converts already-decided facts into professional prose.
  *
  * If Groq is unavailable, times out, returns invalid JSON, or its
@@ -38,17 +38,17 @@ export interface GroqExplanation {
   generated_at: string;
 }
 
-// Words/phrases that must never appear in an AI explanation - if the
+// Words/phrases that must never appear in an AI explanation — if the
 // model's output contains any of these, we discard it and use the
 // deterministic fallback instead of risking financial-advice language
 // or invented specifics.
-// Terms that must NEVER appear at all, regardless of context - pure
+// Terms that must NEVER appear at all, regardless of context — pure
 // trading-advice or unearned-classification vocabulary with no
 // legitimate use in a v1 intelligence report.
 const STRICT_FORBIDDEN_PATTERNS: RegExp[] = [
   /\bbuy\b/i,
   /\bsell\b/i,
-  // Advice-framed "hold" only - NOT the plain possession verb, which
+  // Advice-framed "hold" only — NOT the plain possession verb, which
   // is normal, necessary research language (e.g. "wallets hold 23% of supply").
   /\b(should|recommend(s|ed)?|advise[sd]?)\s+(you\s+)?(to\s+)?hold\b/i,
   /\bhold\s+(onto|on to)\b/i,
@@ -58,7 +58,7 @@ const STRICT_FORBIDDEN_PATTERNS: RegExp[] = [
   /\bmoon(ing)?\b/i,
   /\b\d+x\b/i, // "100x", "10x" style predictions
   /\bguaranteed?\b/i,
-  /\bwhale\b/i, // engine v1 never classifies any account this way - banned outright
+  /\bwhale\b/i, // engine v1 never classifies any account this way — banned outright
 ];
 
 // Terms that ARE legitimate when used to state a limitation/absence of
@@ -79,7 +79,7 @@ function findUnsafeContextualUsage(text: string): string | null {
       const end = Math.min(text.length, match.index + term.length + NEGATION_WINDOW);
       const window = text.slice(start, end);
       if (!SAFE_CONTEXT_PATTERN.test(window)) {
-        return term; // used as an assertion, not a stated limitation - unsafe
+        return term; // used as an assertion, not a stated limitation — unsafe
       }
     }
   }
@@ -112,7 +112,7 @@ function validateGroqShape(obj: unknown): obj is Omit<GroqExplanation, "provider
 /**
  * Builds a professional, deterministic (non-AI) explanation directly
  * from the risk engine's own output. Used whenever Groq is unavailable
- * or its output is rejected. This is not a degraded experience - it's
+ * or its output is rejected. This is not a degraded experience — it's
  * the same facts, worded plainly.
  */
 function buildFallbackExplanation(input: DeterministicRiskSummary): GroqExplanation {
@@ -144,12 +144,12 @@ function buildFallbackExplanation(input: DeterministicRiskSummary): GroqExplanat
 
 /**
  * Calls Groq with a strict system prompt and a timeout. Returns null
- * (never throws to the caller) on any failure - caller falls back to
+ * (never throws to the caller) on any failure — caller falls back to
  * the deterministic explanation.
  */
 async function callGroq(input: DeterministicRiskSummary): Promise<GroqExplanation | null> {
   if (!GROQ_API_KEY) {
-    console.log("[groq-explainer] No GROQ_API_KEY set - using deterministic fallback.");
+    console.log("[groq-explainer] No GROQ_API_KEY set — using deterministic fallback.");
     return null;
   }
 
@@ -164,7 +164,7 @@ STRICT RULES:
 - Never invent facts not present in the input: no liquidity, no volume, no total holder count, no wallet history, no developer behavior, no connected wallets, no rug-pull history.
 - Never use trading/financial-advice language: no buy, sell, hold, entry, target price, "to the moon", multipliers like "10x", or guarantees.
 - Never call any account a "whale" unless the input explicitly classifies it that way.
-- Always clearly state limitations and unavailable data - do not gloss over them.
+- Always clearly state limitations and unavailable data — do not gloss over them.
 - Write like an intelligence report, not a chatbot. No exclamation points, no hype, no emoji.
 
 Respond with ONLY a valid JSON object, no markdown, no code fences, matching exactly this shape:
@@ -242,7 +242,7 @@ Respond with ONLY a valid JSON object, no markdown, no code fences, matching exa
     const fullText = [parsed.headline, parsed.summary, ...parsed.key_findings, ...parsed.limitations].join(" \n ");
     const forbiddenHit = containsForbiddenLanguage(fullText);
     if (forbiddenHit) {
-      console.error(`[groq-explainer] Groq response rejected - forbidden pattern matched: ${forbiddenHit}`);
+      console.error(`[groq-explainer] Groq response rejected — forbidden pattern matched: ${forbiddenHit}`);
       return null;
     }
 
@@ -267,7 +267,7 @@ Respond with ONLY a valid JSON object, no markdown, no code fences, matching exa
 }
 
 /**
- * Public entry point. Always resolves - never throws, never returns
+ * Public entry point. Always resolves — never throws, never returns
  * null. Tries Groq first, falls back to a deterministic explanation
  * on any failure so the pipeline never breaks for lack of AI.
  */
