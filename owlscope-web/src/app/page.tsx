@@ -4,6 +4,7 @@ import {
   EventCard,
   type BehaviorEventListItem,
 } from "@/components/EventCard";
+import { EmptyState } from "@/components/UiState";
 import { supabaseAdmin } from "@/lib/supabase-server";
 
 export const revalidate = 30;
@@ -130,7 +131,7 @@ export default async function HomePage({
                 ? "/"
                 : `/?filter=${item.value}`
             }
-            className={`rounded-lg border px-3 py-1.5 text-sm transition ${
+            className={`rounded-md border px-3 py-1.5 text-sm transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 ${
               validFilter === item.value
                 ? "border-accent bg-accent/10 font-medium text-accent"
                 : "border-border text-muted hover:border-accent/40"
@@ -142,11 +143,9 @@ export default async function HomePage({
       </nav>
 
       {events.length === 0 ? (
-        <p className="py-10 text-center text-sm text-muted">
-          No behavior events detected yet for this filter.
-        </p>
+        <EmptyState icon="○" title="No behavior events detected" message="No behavior events have been detected for this filter yet." />
       ) : (
-        <div className="flex flex-col gap-3.5">
+        <div className="flex flex-col gap-4">
           {events.map((event) => (
             <EventCard key={event.id} event={event} />
           ))}

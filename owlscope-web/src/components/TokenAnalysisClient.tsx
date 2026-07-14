@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AiSummaryCard from "@/components/AiSummaryCard";
 import RiskCard from "@/components/RiskCard";
 import TokenHeader from "@/components/TokenHeader";
 import TopHoldersTable from "@/components/TopHoldersTable";
+import { ErrorState, SkeletonBlock } from "@/components/UiState";
 import type { TokenAnalysisApiResponse, TokenAnalysisApiResult, TokenIntelligenceResponse } from "@/types/token-intelligence";
 
 type Props = { mintAddress: string };
@@ -17,33 +18,37 @@ type LoadState =
 export default function TokenAnalysisClient({ mintAddress }: Props) {
   const [state, setState] = useState<LoadState>({ status: "loading" });
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setState({ status: "loading" });
-      try {
-        const response = await fetch(`/api/token/${encodeURIComponent(mintAddress)}`, { cache: "no-store" });
-        const payload = (await response.json()) as TokenAnalysisApiResponse;
-        if (cancelled) return;
-        if (!response.ok || !payload.success) {
-          setState({ status: "error", message: payload.success ? "Analysis incomplete" : payload.error.message });
-          return;
-        }
-        setState({ status: "ready", data: payload.data });
-      } catch {
-        if (!cancelled) setState({ status: "error", message: "Analysis incomplete" });
+  const load = useCallback(async () => {
+    setState({ status: "loading" });
+    try {
+      const response = await fetch(`/api/token/${encodeURIComponent(mintAddress)}`, { cache: "no-store" });
+      const payload = (await response.json()) as TokenAnalysisApiResponse;
+      if (!response.ok || !payload.success) {
+        setState({ status: "error", message: payload.success ? "Analysis incomplete" : payload.error.message });
+        return;
       }
+      setState({ status: "ready", data: payload.data });
+    } catch {
+      setState({ status: "error", message: "Analysis incomplete" });
     }
-    void load();
-    return () => { cancelled = true; };
   }, [mintAddress]);
 
+  useEffect(() => {
+    let cancelled = false;
+    async function loadIfCurrent() {
+      await load();
+      if (cancelled) return;
+    }
+    void loadIfCurrent();
+    return () => { cancelled = true; };
+  }, [load]);
+
   if (state.status === "loading") {
-    return <InfoState title="Analyzing token" message="Running deterministic risk analysis. Missing provider data will be marked unavailable." />;
+    return <TokenAnalysisSkeleton />;
   }
 
   if (state.status === "error") {
-    return <InfoState title="Analysis incomplete" message={state.message} />;
+    return <main className="mx-auto max-w-md px-4 py-24"><ErrorState title="Analysis incomplete" message="We could not load this token analysis right now." action={<button type="button" onClick={() => void load()} className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30">Try again</button>} /></main>;
   }
 
   const view = toViewModel(state.data);
@@ -107,11 +112,14 @@ function toViewModel(data: TokenAnalysisApiResult): TokenIntelligenceResponse {
   };
 }
 
-function InfoState({ title, message }: { title: string; message: string }) {
+function TokenAnalysisSkeleton() {
   return (
-    <main className="mx-auto flex max-w-md flex-col items-center gap-2 px-4 py-24 text-center">
-      <h1 className="font-display text-lg font-semibold text-foreground">{title}</h1>
-      <p className="text-sm text-muted">{message}</p>
+    <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
+      <section className="border-b border-border pb-6">
+        <div className="flex items-center gap-3"><SkeletonBlock className="h-12 w-12 rounded-full" /><div><SkeletonBlock className="h-7 w-48" /><SkeletonBlock className="mt-2 h-5 w-36" /></div></div>
+        <div className="mt-6 grid grid-cols-2 gap-4"><SkeletonBlock className="h-12" /><SkeletonBlock className="h-12" /></div>
+      </section>
+      {[0, 1, 2].map((item) => <section key={item} className="rounded-lg border border-border bg-background p-6"><SkeletonBlock className="h-6 w-40" /><SkeletonBlock className="mt-4 h-24 w-full" /></section>)}
     </main>
   );
 }

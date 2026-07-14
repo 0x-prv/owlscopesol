@@ -35,7 +35,7 @@ type RiskCardProps = {
 export default function RiskCard({ risk }: RiskCardProps) {
   if (!risk) {
     return (
-      <section className="rounded-xl border border-border bg-background p-6">
+      <section className="rounded-lg border border-border bg-background p-6">
         <h2 className="font-display text-lg font-semibold text-foreground">
           Risk assessment
         </h2>
@@ -49,7 +49,7 @@ export default function RiskCard({ risk }: RiskCardProps) {
   const parsedFactors = isRiskFactorsShape(risk.factors) ? risk.factors : null;
 
   return (
-    <section className="rounded-xl border border-border bg-background p-6">
+    <section className="rounded-lg border border-border bg-background p-6">
       <h2 className="font-display text-lg font-semibold text-foreground">
         Risk assessment
       </h2>

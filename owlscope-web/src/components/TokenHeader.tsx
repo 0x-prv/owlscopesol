@@ -49,7 +49,7 @@ export default function TokenHeader({ token, snapshot }: TokenHeaderProps) {
         <button
           type="button"
           onClick={handleCopy}
-          className="flex w-fit items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1 font-mono text-xs text-muted hover:text-foreground hover:border-foreground/20 transition"
+          className="flex w-fit items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1 font-mono text-xs text-muted transition duration-150 hover:border-accent/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
           title={token.mintAddress}
         >
           {truncateAddress(token.mintAddress, 6)}
@@ -104,7 +104,7 @@ function AuthorityBadge({
 }) {
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
+      className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium"
       style={{
         backgroundColor: !available ? "var(--risk-unknown-bg)" : renounced ? "var(--risk-low-bg)" : "var(--risk-medium-bg)",
         color: !available ? "var(--risk-unknown)" : renounced ? "var(--risk-low)" : "var(--risk-medium)",
