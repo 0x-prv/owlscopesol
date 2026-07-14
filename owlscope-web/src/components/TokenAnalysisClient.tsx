@@ -49,7 +49,7 @@ export default function TokenAnalysisClient({ mintAddress }: Props) {
   }
 
   if (state.status === "error") {
-    return <main className="mx-auto max-w-md px-4 py-24"><ErrorState title="Analysis incomplete" message="We could not load this token analysis right now." action={<button type="button" onClick={() => void load()} className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30">Try again</button>} /></main>;
+    return <main className="mx-auto max-w-md px-4 py-24"><ErrorState title="Analysis incomplete" message="We could not load this token analysis right now. The token may not have a completed persisted report yet, or a data provider may be unavailable." action={<button type="button" onClick={() => void load()} className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30">Try again</button>} /></main>;
   }
 
   const view = toViewModel(state.data);
@@ -58,11 +58,12 @@ export default function TokenAnalysisClient({ mintAddress }: Props) {
       <TokenHeader token={view.token} snapshot={view.snapshot} />
       <RiskCard risk={view.risk} />
       <AiSummaryCard ai={view.ai} />
+      <CurrentAssessment risk={view.risk} />
       <TopHoldersTable topHolders={view.snapshot?.topHolders ?? []} token={view.token} />
       <DataProvenance snapshot={view.snapshot} />
       {state.data.dataAvailabilityWarnings.length > 0 ? (
         <section className="rounded-xl border border-border bg-background p-6">
-          <h2 className="font-display text-lg font-semibold text-foreground">Data availability warnings</h2>
+          <h2 className="font-display text-lg font-semibold text-foreground">Known Limitations</h2>
           <ul className="mt-2 flex flex-col gap-1 text-sm text-muted">
             {state.data.dataAvailabilityWarnings.map((item) => (
               <li key={`${item.provider}-${item.operation}`}>{item.message}</li>
@@ -72,6 +73,25 @@ export default function TokenAnalysisClient({ mintAddress }: Props) {
       ) : null}
       <p className="text-center text-xs text-muted">Last updated {new Date(view.metadata.lastUpdated ?? state.data.ai.generatedAt).toLocaleString()}</p>
     </main>
+  );
+}
+
+function CurrentAssessment({ risk }: { risk: TokenIntelligenceResponse["risk"] }) {
+  const factors = typeof risk?.factors === "object" && risk.factors !== null && Array.isArray((risk.factors as { factors?: unknown }).factors)
+    ? ((risk.factors as { factors: Array<{ category?: string; risk_score?: number | null; data_available?: boolean }> }).factors)
+    : [];
+  const evaluated = factors.filter((factor) => factor.data_available && typeof factor.risk_score === "number");
+
+  return (
+    <section className="rounded-xl border border-border bg-background p-6">
+      <h2 className="font-display text-lg font-semibold text-foreground">Current Assessment</h2>
+      <p className="mt-2 text-sm leading-6 text-muted">The score summarizes deterministic risk factors available in the latest persisted analysis. AI Interpretation explains this report; it does not calculate, edit, or override the score.</p>
+      <dl className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-lg bg-surface p-3"><dt className="text-xs text-muted">Score meaning</dt><dd className="mt-1 text-sm font-medium text-foreground">{risk?.score ?? "Unavailable"}/100 · {risk?.level ?? "Not evaluated"}</dd></div>
+        <div className="rounded-lg bg-surface p-3"><dt className="text-xs text-muted">Contributors</dt><dd className="mt-1 text-sm font-medium text-foreground">{evaluated.length ? `${evaluated.length} evaluated factors` : "No numeric factors available"}</dd></div>
+        <div className="rounded-lg bg-surface p-3"><dt className="text-xs text-muted">AI role</dt><dd className="mt-1 text-sm font-medium text-foreground">Explanation only</dd></div>
+      </dl>
+    </section>
   );
 }
 

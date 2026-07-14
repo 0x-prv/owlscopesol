@@ -15,6 +15,26 @@ const FILTERS = [
   { label: "Holders", value: "holder_concentration_spike" },
 ] as const;
 
+const WORKFLOW_STEPS = [
+  { title: "Blockchain Data", description: "OwlScope starts with observable Solana token data and persisted snapshots." },
+  { title: "Risk Engine", description: "Deterministic checks score measurable authority, holder, and metadata conditions." },
+  { title: "Behavior Detection", description: "Persisted snapshots are compared to identify meaningful on-chain changes." },
+  { title: "AI Explanation", description: "AI turns the calculated report into readable interpretation without changing risk." },
+] as const;
+
+const ROADMAP_ITEMS = [
+  "Wallet Sign In",
+  "Saved Analyses",
+  "Watchlists",
+  "Smart Alerts",
+  "Risk History",
+  "Historical Behavior Timeline",
+  "Wallet Monitoring",
+  "Developer Wallet Intelligence",
+  "Liquidity Monitoring",
+  "Portfolio Intelligence",
+] as const;
+
 const INTELLIGENCE_CATEGORIES = [
   {
     title: "Authority Risk",
@@ -172,14 +192,14 @@ export default async function HomePage({
         <div className="max-w-3xl">
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-accent">Solana intelligence dashboard</p>
           <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-            Solana Token Intelligence, Explained
+            Deterministic Solana Risk Intelligence
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-muted sm:text-lg">
-            Analyze live on-chain behavior, identify measurable token risks, and understand what changed without relying on hype or market prompts.
+            Search any Solana token, generate deterministic risk analysis, view an AI Interpretation, and browse recent intelligence from persisted blockchain observations.
           </p>
         </div>
         <div className="mt-7 max-w-2xl">
-          <SearchBar label="Search by mint, symbol, or token name" buttonLabel="Analyze Token" />
+          <SearchBar label="Search any Solana token" buttonLabel="Analyze" />
           <p className="mt-3 text-xs leading-5 text-muted">
             Deterministic risk scoring from observable Solana data. AI explains the findings but never calculates the score.
           </p>
@@ -204,7 +224,7 @@ export default async function HomePage({
       <section>
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">Latest On-Chain Intelligence</h2>
+            <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">Recent Intelligence</h2>
             <p className="mt-2 text-sm leading-6 text-muted">Observable token behavior changes detected from persisted Solana snapshots.</p>
           </div>
           <nav className="flex flex-wrap gap-2" aria-label="Intelligence filters">
@@ -229,8 +249,35 @@ export default async function HomePage({
         )}
       </section>
 
+
+      <section aria-labelledby="how-owlscope-works" className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
+        <div className="max-w-2xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Primary flow</p>
+          <h2 id="how-owlscope-works" className="mt-2 font-display text-2xl font-semibold tracking-tight text-foreground">How OwlScope Works</h2>
+          <p className="mt-2 text-sm leading-6 text-muted">A focused intelligence workflow: Analyze → Risk Report → AI Interpretation → Intelligence Feed.</p>
+        </div>
+        <div className="mt-6 grid gap-3 md:grid-cols-4">
+          {WORKFLOW_STEPS.map((step, index) => (
+            <article key={step.title} className="rounded-xl border border-border bg-background p-5 transition duration-200 hover:-translate-y-0.5 hover:border-accent/40">
+              <div className="mb-4 flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 font-mono text-sm font-semibold text-accent">{index + 1}</div>
+              <h3 className="font-display text-base font-semibold text-foreground">{step.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-muted">{step.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section aria-labelledby="why-owlscope" className="rounded-2xl border border-border bg-background p-6 sm:p-8">
+        <h2 id="why-owlscope" className="font-display text-2xl font-semibold tracking-tight text-foreground">Why OwlScope?</h2>
+        <div className="mt-4 grid gap-4 text-sm leading-6 text-muted md:grid-cols-3">
+          <p className="rounded-xl bg-surface p-4">Blockchain explorers show transactions.</p>
+          <p className="rounded-xl bg-surface p-4">Market trackers show prices.</p>
+          <p className="rounded-xl bg-surface p-4 text-foreground">OwlScope explains observable blockchain behavior using deterministic analysis.</p>
+        </div>
+      </section>
+
       <section>
-        <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">What OwlScope Evaluates</h2>
+        <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">Risk intelligence categories</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           {INTELLIGENCE_CATEGORIES.map((category) => (
             <article key={category.title} className="rounded-xl border border-border bg-background p-5">
@@ -239,6 +286,17 @@ export default async function HomePage({
             </article>
           ))}
         </div>
+      </section>
+
+      <section aria-labelledby="roadmap" className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Coming in future releases</p>
+        <h2 id="roadmap" className="mt-2 font-display text-2xl font-semibold tracking-tight text-foreground">Product roadmap</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">These capabilities are roadmap items only and are not part of the current MVP experience.</p>
+        <ul className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {ROADMAP_ITEMS.map((item) => (
+            <li key={item} className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground">{item}</li>
+          ))}
+        </ul>
       </section>
     </main>
   );
