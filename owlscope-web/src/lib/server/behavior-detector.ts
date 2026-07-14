@@ -33,6 +33,7 @@ async function insertEvent(params: {
       title: params.title,
       summary: params.summary,
       detected_at: new Date().toISOString(),
+        occurred_at: new Date().toISOString(),
     })
     .select("id")
     .single();
