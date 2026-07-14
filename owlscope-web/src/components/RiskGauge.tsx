@@ -89,7 +89,7 @@ export default function RiskGauge({
           className="font-mono font-semibold leading-none"
           style={{ fontSize: size * 0.22, color: strokeColor }}
         >
-          {clampedScore !== null ? Math.round(clampedScore) : "—"}
+          {clampedScore !== null ? Math.round(clampedScore) : "Unavailable"}
         </span>
         <span
           className="rounded-full px-2 py-0.5 text-[11px] font-medium font-sans"

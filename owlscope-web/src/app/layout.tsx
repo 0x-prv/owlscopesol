@@ -4,7 +4,7 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "OwlScope — Solana Token Intelligence",
+  title: "OwlScope | Solana Token Intelligence",
   description:
     "Blockchain provides facts. Backend calculates intelligence. AI explains. You decide.",
 };

@@ -4,10 +4,10 @@
  * PURE deterministic logic. No AI. No LLM. No I/O (no fetch, no DB).
  * This module only transforms already-fetched facts into a structured
  * risk report. Groq (Phase 3) explains this output in natural language
- * — it never generates the score itself.
+ *. it never generates the score itself.
  *
  * Rule: if a factor cannot be evaluated from available data, its
- * risk_score is null and it is excluded from the overall aggregate —
+ * risk_score is null and it is excluded from the overall aggregate -
  * never defaulted to 0 (safe) or 100 (unsafe). Missing evidence is
  * not a verdict.
  * ------------------------------------------------------------
@@ -53,7 +53,7 @@ export interface RiskReport {
 
 /**
  * Converts exact raw supply string + decimals into a ui-scaled number.
- * Same approach as market cap computation — BigInt until the final
+ * Same approach as market cap computation. BigInt until the final
  * unavoidable float step.
  */
 export function toUiSupply(rawSupply: string | null, decimals: number | null): number | null {
@@ -104,7 +104,7 @@ function evaluateAuthorityRisk(
       risk_score: null,
       weight: 0.4,
       data_available: false,
-      evidence: ["Authority data unavailable — asset info fetch failed"],
+      evidence: ["Authority data unavailable. asset info fetch failed"],
     };
   }
 
@@ -124,12 +124,12 @@ function evaluateAuthorityRisk(
 
   evidence.push(
     mintActive
-      ? "Mint authority still enabled — additional tokens may be minted"
+      ? "Mint authority still enabled. additional tokens may be minted"
       : "Mint authority renounced"
   );
   evidence.push(
     freezeActive
-      ? "Freeze authority still enabled — transfers may be frozen by authority address"
+      ? "Freeze authority still enabled. transfers may be frozen by authority address"
       : "Freeze authority renounced"
   );
 
@@ -146,7 +146,7 @@ function evaluateAuthorityRisk(
 /**
  * Holder concentration risk: computed ONLY from the top 20 largest
  * accounts visible via getTokenLargestAccounts. This is a SAMPLE, not
- * the total holder base — every finding derived from this factor must
+ * the total holder base. every finding derived from this factor must
  * say "visible top holders", never imply completeness.
  */
 function evaluateHolderConcentration(
@@ -160,7 +160,7 @@ function evaluateHolderConcentration(
       risk_score: null,
       weight: 0.4,
       data_available: false,
-      evidence: ["Holder concentration unavailable — top holders or supply data missing"],
+      evidence: ["Holder concentration unavailable. top holders or supply data missing"],
     };
   }
 
@@ -176,7 +176,7 @@ function evaluateHolderConcentration(
       risk_score: null,
       weight: 0.4,
       data_available: false,
-      evidence: ["Holder concentration unavailable — holder amounts were not numeric"],
+      evidence: ["Holder concentration unavailable. holder amounts were not numeric"],
     };
   }
 
@@ -191,7 +191,7 @@ function evaluateHolderConcentration(
       risk_score: null,
       weight: 0.4,
       data_available: false,
-      evidence: ["Holder concentration unavailable — holder amounts were not numeric"],
+      evidence: ["Holder concentration unavailable. holder amounts were not numeric"],
     };
   }
 
@@ -235,7 +235,7 @@ function evaluateMetadataCompleteness(
       risk_score: null,
       weight: 0.2,
       data_available: false,
-      evidence: ["Metadata unavailable — asset info fetch may have failed"],
+      evidence: ["Metadata unavailable. asset info fetch may have failed"],
     };
   }
 
@@ -250,7 +250,7 @@ function evaluateMetadataCompleteness(
     evidence: [
       missingCount === 0
         ? "Token metadata is complete (name, symbol, decimals present)"
-        : `Token metadata is incomplete — ${missingCount} of ${fields.length} core fields missing`,
+        : `Token metadata is incomplete. ${missingCount} of ${fields.length} core fields missing`,
     ],
   };
 }
@@ -297,7 +297,7 @@ export function computeRiskReport(input: RiskEngineInput): RiskReport {
   const findings = factors.flatMap((f) => f.evidence);
 
   const caveats: string[] = [
-    "Holder concentration is computed from the top 20 largest visible accounts only, not the total holder base — total holder count is not currently available.",
+    "Holder concentration is computed from the top 20 largest visible accounts only, not the total holder base. total holder count is not currently available.",
     "Liquidity, trading behavior, and developer wallet history are not yet evaluated in this version of the risk engine.",
   ];
 

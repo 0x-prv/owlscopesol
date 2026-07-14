@@ -20,7 +20,7 @@ export default function TokenHeader({ token, snapshot }: TokenHeaderProps) {
       setTimeout(() => setCopied(false), 1500);
     } catch {
       // Clipboard access can fail silently (permissions, insecure
-      // context) — not worth surfacing an error for a copy button.
+      // context) - not worth surfacing an error for a copy button.
     }
   }
 

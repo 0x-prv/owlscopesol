@@ -10,7 +10,7 @@ export default function TokenPageError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log to console for now — swap for real error reporting
+    // Log to console for now - swap for real error reporting
     // (Sentry, etc.) when that's wired up.
     console.error("Token page error:", error);
   }, [error]);

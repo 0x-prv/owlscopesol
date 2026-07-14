@@ -26,7 +26,6 @@ export function eventTypeLabel(eventType: string): string {
   const labels: Record<string, string> = {
     authority_change: "Authority",
     holder_concentration_spike: "Holders",
-    liquidity_change: "Liquidity",
   };
 
   return labels[eventType] ?? "Behavior";
@@ -67,7 +66,10 @@ export function EventCard({ event }: { event: BehaviorEventListItem }) {
         <span className="shrink-0 text-xs text-muted">{timeAgo(event.detectedAt)}</span>
       </div>
 
-      <p className="mb-1.5 text-sm font-semibold leading-5 text-foreground transition-colors group-hover:text-accent">{event.title}</p>
+      <div className="mb-2 min-w-0">
+        <p className="truncate text-xs font-medium text-muted">{event.tokenName ?? "Unknown token"}{event.tokenSymbol ? ` (${event.tokenSymbol})` : ""}</p>
+        <p className="mt-1 text-sm font-semibold leading-5 text-foreground transition-colors group-hover:text-accent">{event.title}</p>
+      </div>
       <p className="mb-3 text-sm leading-6 text-muted">{event.summary}</p>
 
       <div className="flex items-center justify-between gap-3 border-t border-border pt-3 text-xs">
