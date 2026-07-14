@@ -1,5 +1,6 @@
 import type { TokenOverview } from "@/types/token-intelligence";
 import { formatNumber, formatPercent, truncateAddress } from "@/lib/format";
+import { EmptyState } from "@/components/UiState";
 
 type Holder = {
   address: string;
@@ -50,19 +51,17 @@ export default function TopHoldersTable({
 
   if (holders.length === 0) {
     return (
-      <section className="rounded-xl border border-border bg-background p-6">
+      <section className="rounded-lg border border-border bg-background p-6">
         <h2 className="font-display text-lg font-semibold text-foreground">
           Largest holders
         </h2>
-        <p className="mt-2 text-sm text-muted">
-          Not provided by current data source.
-        </p>
+        <div className="mt-4"><EmptyState icon="◌" title="No holder data available" message="Largest holder data is not provided by the current data source." /></div>
       </section>
     );
   }
 
   return (
-    <section className="rounded-xl border border-border bg-background p-6">
+    <section className="rounded-lg border border-border bg-background p-6">
       <h2 className="font-display text-lg font-semibold text-foreground">
         Largest holders
       </h2>

@@ -53,7 +53,7 @@ export function EventCard({ event }: { event: BehaviorEventListItem }) {
   return (
     <Link
       href={`/event/${event.id}`}
-      className="group block rounded-xl border border-border bg-background px-5 py-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-md"
+      className="group block rounded-lg border border-border bg-background px-5 py-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-accent/40 hover:bg-surface/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
     >
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">

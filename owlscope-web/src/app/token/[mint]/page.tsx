@@ -1,4 +1,5 @@
 import TokenAnalysisClient from "@/components/TokenAnalysisClient";
+import { ErrorState } from "@/components/UiState";
 
 const MINT_ADDRESS_PATTERN = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
@@ -8,17 +9,8 @@ export default async function TokenPage({ params }: TokenPageProps) {
   const { mint } = await params;
 
   if (!MINT_ADDRESS_PATTERN.test(mint)) {
-    return <InfoState title="Invalid mint address" message="That doesn't look like a valid Solana mint address. Double-check the address and try again." />;
+    return <main className="mx-auto max-w-md px-4 py-24"><ErrorState title="Invalid mint address" message="That does not look like a valid Solana mint address. Double-check the address and try again." /></main>;
   }
 
   return <TokenAnalysisClient mintAddress={mint} />;
-}
-
-function InfoState({ title, message }: { title: string; message: string }) {
-  return (
-    <main className="mx-auto flex max-w-md flex-col items-center gap-2 px-4 py-24 text-center">
-      <h1 className="font-display text-lg font-semibold text-foreground">{title}</h1>
-      <p className="text-sm text-muted">{message}</p>
-    </main>
-  );
 }

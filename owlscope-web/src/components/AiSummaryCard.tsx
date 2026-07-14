@@ -7,7 +7,7 @@ type AiSummaryCardProps = {
 export default function AiSummaryCard({ ai }: AiSummaryCardProps) {
   if (!ai || !ai.summary) {
     return (
-      <section className="rounded-xl border border-border bg-background p-6">
+      <section className="rounded-lg border border-border bg-background p-6">
         <div className="flex items-center gap-2">
           <AiBadge />
           <h2 className="font-display text-lg font-semibold text-foreground">
@@ -25,7 +25,7 @@ export default function AiSummaryCard({ ai }: AiSummaryCardProps) {
   const limitations = Array.isArray(ai.limitations) ? ai.limitations : [];
 
   return (
-    <section className="rounded-xl border border-border bg-background p-6">
+    <section className="rounded-lg border border-border bg-background p-6">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <AiBadge />
