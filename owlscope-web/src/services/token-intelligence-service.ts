@@ -124,6 +124,7 @@ export async function getTokenIntelligence(
     mintAddress: String(tokenRow.mint_address),
     name: asNullableString(tokenRow.name),
     symbol: asNullableString(tokenRow.symbol),
+    logoUrl: asNullableString(tokenRow.logo_url),
     decimals: asNullableNumber(tokenRow.decimals),
     mintAuthority: asNullableString(tokenRow.mint_authority),
     freezeAuthority: asNullableString(tokenRow.freeze_authority),

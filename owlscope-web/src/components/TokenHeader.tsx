@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import TokenAvatar from "@/components/TokenAvatar";
 import type { TokenOverview, TokenSnapshot } from "@/types/token-intelligence";
 import { formatCompactUsd, formatUsd, truncateAddress } from "@/lib/format";
 
@@ -31,7 +32,9 @@ export default function TokenHeader({ token, snapshot }: TokenHeaderProps) {
 
   return (
     <div className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-start sm:justify-between">
-      <div className="flex flex-col gap-2">
+      <div className="flex items-start gap-3">
+        <TokenAvatar logoUrl={token.logoUrl} symbol={token.symbol} name={token.name} size="lg" />
+        <div className="flex min-w-0 flex-col gap-2">
         <div className="flex items-baseline gap-2 flex-wrap">
           <h1 className="font-display text-2xl font-semibold text-foreground">
             {token.name ?? "Unknown token"}
@@ -75,6 +78,7 @@ export default function TokenHeader({ token, snapshot }: TokenHeaderProps) {
         <div className="flex flex-wrap gap-2 pt-1">
           <AuthorityBadge label="Mint authority" renounced={mintRenounced} available={mintAvailable} />
           <AuthorityBadge label="Freeze authority" renounced={freezeRenounced} available={freezeAvailable} />
+        </div>
         </div>
       </div>
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import TokenAvatar from "@/components/TokenAvatar";
 
 export type BehaviorEventListItem = {
   id: string;
@@ -9,6 +10,8 @@ export type BehaviorEventListItem = {
   summary: string;
   detectedAt: string;
   tokenSymbol: string | null;
+  tokenName?: string | null;
+  tokenLogoUrl: string | null;
   tokenMintAddress: string | null;
 };
 
@@ -68,10 +71,13 @@ export function EventCard({ event }: { event: BehaviorEventListItem }) {
       <p className="mb-3 text-sm leading-6 text-muted">{event.summary}</p>
 
       <div className="flex items-center justify-between gap-3 border-t border-border pt-3 text-xs">
-        <span className="truncate font-mono text-muted">
-          {event.tokenSymbol ? `$${event.tokenSymbol} · ` : ""}
-          {event.tokenMintAddress ? shorten(event.tokenMintAddress) : "Token unavailable"}
-        </span>
+        <div className="flex min-w-0 items-center gap-2">
+          <TokenAvatar logoUrl={event.tokenLogoUrl} symbol={event.tokenSymbol} name={event.tokenName} size="sm" />
+          <span className="truncate font-mono text-muted">
+            {event.tokenSymbol ? `$${event.tokenSymbol} · ` : ""}
+            {event.tokenMintAddress ? shorten(event.tokenMintAddress) : "Token unavailable"}
+          </span>
+        </div>
         <span className="shrink-0 font-medium text-accent">{confidencePct}% confidence</span>
       </div>
     </Link>

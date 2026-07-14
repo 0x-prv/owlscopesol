@@ -29,7 +29,7 @@ async function getEvents(
   let query = supabaseAdmin
     .from("behavior_events")
     .select(
-      "id, event_type, severity, confidence, title, summary, detected_at, tokens(symbol, mint_address)",
+      "id, event_type, severity, confidence, title, summary, detected_at, tokens(symbol, name, logo_url, mint_address)",
     )
     .order("detected_at", { ascending: false })
     .limit(50);
@@ -74,6 +74,8 @@ async function getEvents(
         summary,
         detectedAt,
         tokenSymbol: asNullableString(tokenRow?.symbol),
+        tokenName: asNullableString(tokenRow?.name),
+        tokenLogoUrl: asNullableString(tokenRow?.logo_url),
         tokenMintAddress: asNullableString(
           tokenRow?.mint_address,
         ),

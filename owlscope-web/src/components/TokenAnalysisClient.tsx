@@ -75,6 +75,7 @@ function toViewModel(data: TokenAnalysisApiResult): TokenIntelligenceResponse {
       mintAddress: data.token.mintAddress,
       name: data.token.name,
       symbol: data.token.symbol,
+      logoUrl: data.token.logoUrl,
       decimals: data.token.decimals,
       mintAuthority: data.token.mintAuthority,
       freezeAuthority: data.token.freezeAuthority,
