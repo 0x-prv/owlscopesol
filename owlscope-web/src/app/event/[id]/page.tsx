@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { eventTypeLabel, severityStyle } from "@/components/EventCard";
+import TokenAvatar from "@/components/TokenAvatar";
 import { supabaseAdmin } from "@/lib/supabase-server";
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
@@ -24,7 +25,7 @@ type EventRow = {
   detected_at: string | null;
   occurred_at?: string | null;
   created_at: string | null;
-  tokens: { symbol: string | null; name: string | null; mint_address: string | null } | { symbol: string | null; name: string | null; mint_address: string | null }[] | null;
+  tokens: { symbol: string | null; name: string | null; logo_url: string | null; mint_address: string | null } | { symbol: string | null; name: string | null; logo_url: string | null; mint_address: string | null }[] | null;
   behavior_event_evidence: EvidenceRow[] | null;
 };
 
@@ -55,7 +56,7 @@ export default async function EventDetailPage({
 }) {
   const { id } = await params;
   const baseSelect =
-    "id,event_type,severity,confidence,title,summary,detected_at,created_at,tokens(symbol,name,mint_address),behavior_event_evidence(id,evidence_type,source,before_value,after_value,created_at)";
+    "id,event_type,severity,confidence,title,summary,detected_at,created_at,tokens(symbol,name,logo_url,mint_address),behavior_event_evidence(id,evidence_type,source,before_value,after_value,created_at)";
 
   const queryById = (select: string) =>
     supabaseAdmin
@@ -112,7 +113,7 @@ export default async function EventDetailPage({
 
         <dl className="mt-6 grid gap-3 border-t border-border pt-5 text-sm sm:grid-cols-2">
           <div><dt className="text-xs text-muted">Confidence</dt><dd className="mt-1 font-medium text-foreground">{confidencePct}%</dd></div>
-          <div><dt className="text-xs text-muted">Token</dt><dd className="mt-1 font-mono text-foreground">{token?.symbol ? `$${token.symbol}` : token?.name ?? "Unavailable"}</dd></div>
+          <div><dt className="text-xs text-muted">Token</dt><dd className="mt-1 flex items-center gap-2 font-mono text-foreground"><TokenAvatar logoUrl={token?.logo_url} symbol={token?.symbol} name={token?.name} size="sm" /><span>{token?.symbol ? `$${token.symbol}` : token?.name ?? "Unavailable"}</span></dd></div>
           <div><dt className="text-xs text-muted">Detected</dt><dd className="mt-1 text-foreground">{formatDateTime(event.detected_at)}</dd></div>
           <div><dt className="text-xs text-muted">Occurred</dt><dd className="mt-1 text-foreground">{formatDateTime(occurredAt)}</dd></div>
         </dl>

@@ -5,6 +5,7 @@ export type TokenOverview = {
   mintAddress: string;
   name: string | null;
   symbol: string | null;
+  logoUrl: string | null;
   decimals: number | null;
   mintAuthority: string | null;
   freezeAuthority: string | null;
@@ -66,6 +67,7 @@ export type TokenAnalysisApiResult = {
     id: string;
     mintAddress: string;
     symbol: string | null;
+    logoUrl: string | null;
     name: string | null;
     decimals: number | null;
     supply: string | null;

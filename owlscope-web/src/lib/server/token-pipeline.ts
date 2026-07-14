@@ -16,6 +16,7 @@ export type TokenAnalysisResult = {
     id: string;
     mintAddress: string;
     symbol: string | null;
+    logoUrl: string | null;
     name: string | null;
     decimals: number | null;
     supply: string | null;
@@ -65,7 +66,7 @@ function warning(provider: DataAvailabilityWarning["provider"], operation: strin
   return { provider, operation, message: `${operation} failed; related fields are unavailable or analysis may be incomplete.` };
 }
 
-async function upsertToken(mintAddress: string, assetInfo: AssetInfo | undefined): Promise<string> {
+async function upsertToken(mintAddress: string, assetInfo: AssetInfo | undefined): Promise<{ id: string; logoUrl: string | null }> {
   const { data, error } = await supabaseAdmin.from("tokens").upsert({
     mint_address: mintAddress,
     name: assetInfo?.name ?? null,
@@ -75,9 +76,9 @@ async function upsertToken(mintAddress: string, assetInfo: AssetInfo | undefined
     freeze_authority: assetInfo?.freezeAuthority ?? null,
     last_updated_at: new Date().toISOString(),
     metadata: { field_sources: { name: "helius_das", symbol: "helius_das", decimals: "helius_das", mint_authority: "helius_das", freeze_authority: "helius_das", raw_supply: "helius_das" }, is_mutable: assetInfo?.isMutable ?? null, raw_supply: assetInfo?.rawSupply ?? null },
-  }, { onConflict: "mint_address" }).select("id").single();
+  }, { onConflict: "mint_address" }).select("id,logo_url").single();
   if (error) throw new Error(`Supabase token upsert failed: ${error.message}`);
-  return String(data.id);
+  return { id: String(data.id), logoUrl: typeof data.logo_url === "string" && data.logo_url.length > 0 ? data.logo_url : null };
 }
 
 async function insertSnapshot(tokenId: string, assetInfo: AssetInfo | undefined, topHolders: TopHolder[] | undefined, priceData: PriceData | undefined) {
@@ -114,7 +115,8 @@ export async function runTokenPipeline(mintAddress: string): Promise<TokenAnalys
   try { topHolders = await getTopHolders(mintAddress); } catch (error) { console.error("[token-pipeline] getTopHolders failed:", error instanceof Error ? error.message : String(error)); dataAvailabilityWarnings.push(warning("helius", "Helius getTokenLargestAccounts")); }
   try { priceData = await getPriceData(mintAddress); } catch (error) { console.error("[token-pipeline] getPriceData failed:", error instanceof Error ? error.message : String(error)); dataAvailabilityWarnings.push(warning("jupiter", "Jupiter Price API")); }
 
-  const tokenId = await upsertToken(mintAddress, assetInfo);
+  const tokenRecord = await upsertToken(mintAddress, assetInfo);
+  const tokenId = tokenRecord.id;
   const snapshot = await insertSnapshot(tokenId, assetInfo, topHolders, priceData);
   const report = computeRiskReport({ mintAuthority: assetInfo?.mintAuthority ?? null, freezeAuthority: assetInfo?.freezeAuthority ?? null, assetInfoAvailable: assetInfo !== undefined, name: assetInfo?.name ?? null, symbol: assetInfo?.symbol ?? null, decimals: assetInfo?.decimals ?? null, rawSupply: assetInfo?.rawSupply ?? null, topHolders });
   const riskReportId = await insertRiskReport(tokenId, report);
@@ -122,5 +124,5 @@ export async function runTokenPipeline(mintAddress: string): Promise<TokenAnalys
   const { error } = await supabaseAdmin.from("risk_reports").update({ ai_summary: explanation.summary, ai_headline: explanation.headline, ai_findings: explanation.key_findings, ai_limitations: explanation.limitations, ai_provider: explanation.provider, ai_model: explanation.model, ai_generated_at: explanation.generated_at }).eq("id", riskReportId);
   if (error) throw new Error(`Supabase AI explanation update failed: ${error.message}`);
 
-  return { token: { id: tokenId, mintAddress, symbol: assetInfo?.symbol ?? null, name: assetInfo?.name ?? null, decimals: assetInfo?.decimals ?? null, supply: assetInfo?.rawSupply ?? null, mintAuthority: assetInfo?.mintAuthority ?? null, freezeAuthority: assetInfo?.freezeAuthority ?? null }, snapshot, risk: { id: riskReportId, overallRiskScore: report.overall_risk_score, overallRiskLabel: report.overall_risk_label, confidence: report.confidence, findings: report.findings, caveats: report.risk_factors.caveats, factors: report.risk_factors }, ai: { headline: explanation.headline, summary: explanation.summary, findings: explanation.key_findings, limitations: explanation.limitations, provider: explanation.provider, model: explanation.model, generatedAt: explanation.generated_at }, dataAvailabilityWarnings };
+  return { token: { id: tokenId, mintAddress, symbol: assetInfo?.symbol ?? null, logoUrl: tokenRecord.logoUrl, name: assetInfo?.name ?? null, decimals: assetInfo?.decimals ?? null, supply: assetInfo?.rawSupply ?? null, mintAuthority: assetInfo?.mintAuthority ?? null, freezeAuthority: assetInfo?.freezeAuthority ?? null }, snapshot, risk: { id: riskReportId, overallRiskScore: report.overall_risk_score, overallRiskLabel: report.overall_risk_label, confidence: report.confidence, findings: report.findings, caveats: report.risk_factors.caveats, factors: report.risk_factors }, ai: { headline: explanation.headline, summary: explanation.summary, findings: explanation.key_findings, limitations: explanation.limitations, provider: explanation.provider, model: explanation.model, generatedAt: explanation.generated_at }, dataAvailabilityWarnings };
 }
