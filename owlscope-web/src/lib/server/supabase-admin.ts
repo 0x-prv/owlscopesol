@@ -1,13 +1,24 @@
 import "server-only";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { getServerEnv } from "./env";
 
-const env = getServerEnv();
+let cachedSupabaseAdmin: SupabaseClient | null = null;
 
-export const supabaseAdmin = createClient(
-  env.NEXT_PUBLIC_SUPABASE_URL,
-  env.SUPABASE_SERVICE_ROLE_KEY,
-  {
+function getSupabaseAdmin() {
+  if (cachedSupabaseAdmin) {
+    return cachedSupabaseAdmin;
+  }
+
+  const env = getServerEnv();
+  cachedSupabaseAdmin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  return cachedSupabaseAdmin;
+}
+
+export const supabaseAdmin = new Proxy({} as SupabaseClient, {
+  get(_target, property, receiver) {
+    return Reflect.get(getSupabaseAdmin(), property, receiver);
   },
-);
+});
