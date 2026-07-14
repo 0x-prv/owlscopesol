@@ -32,13 +32,13 @@ export default function RootLayout({
               <div className="absolute right-0 mt-2 grid w-40 gap-1 rounded-lg border border-border bg-background p-2 text-sm text-muted shadow-lg">
                 <NavLink href="/">Analyze</NavLink>
                 <NavLink href="/new">New</NavLink>
-                <NavLink href="/trending">Trending</NavLink>
+                <NavLink href="/intelligence">Intelligence</NavLink>
               </div>
             </details>
             <div className="hidden gap-2 text-sm text-muted sm:flex">
               <NavLink href="/">Analyze</NavLink>
               <NavLink href="/new">New</NavLink>
-              <NavLink href="/trending">Trending</NavLink>
+              <NavLink href="/intelligence">Intelligence</NavLink>
             </div>
           </nav>
         </header>
