@@ -1,6 +1,6 @@
 import "server-only";
 
-export type ProviderId = "helius" | "jupiter" | "birdeye" | "dexscreener" | "pumpfun";
+export type ProviderId = "helius" | "jupiter" | "dexscreener" | "pumpfun";
 export type TokenSourceKind = "asset" | "token_list" | "new_listing" | "pair" | "launch" | "pool" | "search";
 
 export type DiscoveredToken = {

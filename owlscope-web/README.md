@@ -73,7 +73,7 @@ Successful responses contain `success: true`, typed token identity, snapshot, de
 
 ## Ecosystem discovery milestone
 
-OwlScope now includes a modular server-only ingestion layer under `src/lib/server/providers`. Every provider implements the common `TokenDiscoveryProvider` contract from `providers/types.ts` and can be enabled, disabled, or replaced without coupling to another provider. Current adapters cover Helius lookup, Jupiter token list and price data, DexScreener listings/pairs, optional Birdeye listings when `BIRDEYE_API_KEY` is present, and Pump.fun launches.
+OwlScope now includes a modular server-only ingestion layer under `src/lib/server/providers`. Every provider implements the common `TokenDiscoveryProvider` contract from `providers/types.ts` and can be enabled, disabled, or replaced without coupling to another provider. Current adapters cover Helius lookup, Jupiter token list and price data, DexScreener listings/pairs, and Pump.fun launches.
 
 ### Worker architecture
 
