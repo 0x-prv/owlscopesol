@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import AiSummaryCard from "@/components/AiSummaryCard";
 import RiskCard from "@/components/RiskCard";
+import DataProvenance from "@/components/DataProvenance";
 import TokenHeader from "@/components/TokenHeader";
 import TopHoldersTable from "@/components/TopHoldersTable";
 import { ErrorState, SkeletonBlock } from "@/components/UiState";
@@ -56,8 +57,9 @@ export default function TokenAnalysisClient({ mintAddress }: Props) {
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
       <TokenHeader token={view.token} snapshot={view.snapshot} />
       <RiskCard risk={view.risk} />
-      <TopHoldersTable topHolders={view.snapshot?.topHolders ?? []} token={view.token} />
       <AiSummaryCard ai={view.ai} />
+      <TopHoldersTable topHolders={view.snapshot?.topHolders ?? []} token={view.token} />
+      <DataProvenance snapshot={view.snapshot} />
       {state.data.dataAvailabilityWarnings.length > 0 ? (
         <section className="rounded-xl border border-border bg-background p-6">
           <h2 className="font-display text-lg font-semibold text-foreground">Data availability warnings</h2>

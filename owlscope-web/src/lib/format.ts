@@ -1,12 +1,12 @@
 /**
  * Formatting helpers for displaying token intelligence data.
- * These are presentation-only — they never invent values. A null
+ * These are presentation-only - they never invent values. A null
  * input always produces the "not available" fallback, never a guess.
  */
 
 export function formatUsd(value: number | null): string {
   if (value === null || !Number.isFinite(value)) {
-    return "—";
+    return "Unavailable";
   }
 
   if (value !== 0 && Math.abs(value) < 0.01) {
@@ -25,7 +25,7 @@ export function formatUsd(value: number | null): string {
 
 export function formatCompactUsd(value: number | null): string {
   if (value === null || !Number.isFinite(value)) {
-    return "—";
+    return "Unavailable";
   }
 
   return new Intl.NumberFormat("en-US", {
@@ -38,40 +38,48 @@ export function formatCompactUsd(value: number | null): string {
 
 export function formatNumber(value: number | null): string {
   if (value === null || !Number.isFinite(value)) {
-    return "—";
+    return "Unavailable";
   }
 
   return new Intl.NumberFormat("en-US").format(value);
 }
 
-export function formatPercent(value: number | null, digits = 1): string {
+export function formatPercent(value: number | null, digits?: number): string {
   if (value === null || !Number.isFinite(value)) {
-    return "—";
+    return "Unavailable";
   }
 
-  return `${value.toFixed(digits)}%`;
+  if (digits !== undefined) {
+    return `${value.toFixed(digits)}%`;
+  }
+
+  const absoluteValue = Math.abs(value);
+  if (absoluteValue > 0 && absoluteValue < 0.001) return "<0.001%";
+  if (absoluteValue < 0.01) return `${value.toFixed(3)}%`;
+  if (absoluteValue < 1) return `${value.toFixed(2)}%`;
+  return `${value.toFixed(1)}%`;
 }
 
 export function truncateAddress(address: string | null, chars = 4): string {
   if (!address) {
-    return "—";
+    return "Unavailable";
   }
 
   if (address.length <= chars * 2 + 3) {
     return address;
   }
 
-  return `${address.slice(0, chars)}…${address.slice(-chars)}`;
+  return `${address.slice(0, chars)}...${address.slice(-chars)}`;
 }
 
 export function formatRelativeTime(isoString: string | null): string {
   if (!isoString) {
-    return "—";
+    return "Unavailable";
   }
 
   const date = new Date(isoString);
   if (Number.isNaN(date.getTime())) {
-    return "—";
+    return "Unavailable";
   }
 
   const diffMs = Date.now() - date.getTime();

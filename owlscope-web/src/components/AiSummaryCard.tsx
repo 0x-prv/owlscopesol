@@ -11,11 +11,11 @@ export default function AiSummaryCard({ ai }: AiSummaryCardProps) {
         <div className="flex items-center gap-2">
           <AiBadge />
           <h2 className="font-display text-lg font-semibold text-foreground">
-            AI explanation
+            AI Interpretation
           </h2>
         </div>
         <p className="mt-2 text-sm text-muted">
-          No AI explanation is available for this token yet.
+          No AI Interpretation is available for this token yet.
         </p>
       </section>
     );
@@ -30,7 +30,7 @@ export default function AiSummaryCard({ ai }: AiSummaryCardProps) {
         <div className="flex items-center gap-2">
           <AiBadge />
           <h2 className="font-display text-lg font-semibold text-foreground">
-            AI explanation
+            AI Interpretation
           </h2>
         </div>
         {ai.provider || ai.model ? (
@@ -43,8 +43,7 @@ export default function AiSummaryCard({ ai }: AiSummaryCardProps) {
       </div>
 
       <p className="mt-1 text-xs text-muted">
-        Generated from the deterministic risk report above. The AI explains
-        the findings — it does not calculate or change the risk score.
+        Generated from the deterministic risk report above. AI explains the evidence and does not calculate or alter the score.
       </p>
 
       {ai.headline ? (

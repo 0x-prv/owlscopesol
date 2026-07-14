@@ -37,7 +37,7 @@ async function getDexScreenerLogo(mintAddress: string): Promise<string | null> {
 
 /**
  * Resolves a logo URL for a mint address, trying (in order):
- * 1. An already-known value (e.g. cached in DB) — passed in as `known`.
+ * 1. An already-known value (e.g. cached in DB) - passed in as `known`.
  * 2. Jupiter token list.
  * 3. DexScreener token pairs.
  * Returns null only if none of the sources have an image.
