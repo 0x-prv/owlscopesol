@@ -34,6 +34,13 @@ function record(value: unknown): JsonRecord { return typeof value === "object" &
 function str(value: unknown): string | null { return typeof value === "string" && value.length > 0 ? value : null; }
 function num(value: unknown): number | null { return typeof value === "number" && Number.isFinite(value) ? value : null; }
 
+function heliusErrorMessage(json: JsonRecord, label: string): string {
+  const error = record(json.error);
+  const message = str(error.message);
+  const code = error.code != null ? ` (${String(error.code)})` : "";
+  return message ? `${label} error${code}: ${message}` : `${label} error`;
+}
+
 export async function getAssetInfo(mintAddress: string): Promise<AssetInfo> {
   const json = await safeFetchJson("Helius getAsset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: "owlscope-web", method: "getAsset", params: { id: mintAddress, displayOptions: { showFungible: true } } }) }, ["supply"]);
   if (json.error) throw new Error(`Helius getAsset error`);
@@ -52,21 +59,69 @@ export async function getAssetInfo(mintAddress: string): Promise<AssetInfo> {
   };
 }
 
+function topHoldersFromLargestAccounts(json: JsonRecord): TopHolder[] {
+  const result = record(json.result);
+  const accounts = Array.isArray(result.value) ? result.value : [];
+  return accounts.flatMap((account) => {
+    const acc = record(account);
+    const address = str(acc.address);
+    const amount = str(acc.uiAmountString);
+    return address && amount ? [{ address, amount }] : [];
+  });
+}
+
+function topHoldersFromTokenAccounts(json: JsonRecord, decimals: number | null): TopHolder[] {
+  const result = record(json.result);
+  const accounts = Array.isArray(result.token_accounts) ? result.token_accounts : [];
+  const decimalPlaces = decimals !== null && Number.isInteger(decimals) && decimals >= 0 ? decimals : null;
+
+  return accounts
+    .flatMap((account) => {
+      const acc = record(account);
+      const address = str(acc.address);
+      const rawAmount =
+        typeof acc.amount === "number" || typeof acc.amount === "string" ? String(acc.amount) : null;
+      if (!address || rawAmount === null) return [];
+
+      let rawAmountBigInt: bigint;
+      try {
+        rawAmountBigInt = BigInt(rawAmount);
+      } catch {
+        return [];
+      }
+
+      const amount = decimalPlaces === null
+        ? rawAmountBigInt.toString()
+        : formatTokenAmount(rawAmountBigInt, decimalPlaces);
+      return [{ address, amount, rawAmount: rawAmountBigInt }];
+    })
+    .sort((a, b) => (a.rawAmount === b.rawAmount ? 0 : a.rawAmount > b.rawAmount ? -1 : 1))
+    .slice(0, 20)
+    .map(({ address, amount }) => ({ address, amount }));
+}
+
+function formatTokenAmount(rawAmount: bigint, decimals: number): string {
+  if (decimals === 0) return rawAmount.toString();
+  const negative = rawAmount < BigInt(0);
+  const digits = (negative ? -rawAmount : rawAmount).toString().padStart(decimals + 1, "0");
+  const whole = digits.slice(0, -decimals);
+  const fraction = digits.slice(-decimals).replace(/0+$/, "");
+  return `${negative ? "-" : ""}${whole}${fraction ? `.${fraction}` : ""}`;
+}
+
 export async function getTopHolders(mintAddress: string, retries = 2): Promise<TopHolder[]> {
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     try {
       const json = await safeFetchJson(`Helius getTokenLargestAccounts`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: "owlscope-web", method: "getTokenLargestAccounts", params: [mintAddress] }) });
-      if (json.error) throw new Error("Helius getTokenLargestAccounts error");
-      const result = record(json.result);
-      const accounts = Array.isArray(result.value) ? result.value : [];
-      return accounts.flatMap((account) => {
-        const acc = record(account);
-        const address = str(acc.address);
-        const amount = str(acc.uiAmountString);
-        return address && amount ? [{ address, amount }] : [];
-      });
-    } catch (error) {
-      if (attempt === retries) throw error;
+      if (json.error) throw new Error(heliusErrorMessage(json, "Helius getTokenLargestAccounts"));
+      return topHoldersFromLargestAccounts(json);
+    } catch {
+      if (attempt === retries) {
+        const assetInfo = await getAssetInfo(mintAddress);
+        const fallbackJson = await safeFetchJson(`Helius getTokenAccounts`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: "owlscope-web", method: "getTokenAccounts", params: { mint: mintAddress, page: 1, limit: 1000, options: { showZeroBalance: false } } }) });
+        if (fallbackJson.error) throw new Error(heliusErrorMessage(fallbackJson, "Helius getTokenAccounts"));
+        return topHoldersFromTokenAccounts(fallbackJson, assetInfo.decimals);
+      }
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   }

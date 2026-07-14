@@ -19,9 +19,8 @@ function asNullableString(value: unknown): string | null {
 }
 
 function asNumber(value: unknown, fallback = 0): number {
-  return typeof value === "number" && Number.isFinite(value)
-    ? value
-    : fallback;
+  const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 async function getEvents(
