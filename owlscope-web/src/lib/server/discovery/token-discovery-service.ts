@@ -2,19 +2,31 @@ import "server-only";
 import { supabaseAdmin } from "../supabase-admin";
 import { runTokenPipeline } from "../token-pipeline";
 import { tokenProviders, type DiscoveredToken, type MarketSnapshot } from "../providers";
+import { resolveLogoUrl } from "../logo-fallback";
 
 type SourceResult = { provider: string; discovered: number; error: string | null };
 export type DiscoveryRunResult = { discovered: DiscoveredToken[]; sourceResults: SourceResult[] };
 
 async function persistDiscovery(token: DiscoveredToken) {
   const now = new Date().toISOString();
-  const { data, error } = await supabaseAdmin.from("tokens").upsert({ mint_address: token.mintAddress, name: token.name, symbol: token.symbol, decimals: token.decimals, logo_url: token.logoUrl, first_seen_at: token.firstSeenAt ?? now, discovery_time: token.discoveredAt, last_updated_at: now, metadata: { source: token.source, source_kind: token.sourceKind, raw: token.raw } }, { onConflict: "mint_address" }).select("id").single();
+
+  let logoUrl = token.logoUrl;
+  if (!logoUrl) {
+    const { data: existing } = await supabaseAdmin
+      .from("tokens")
+      .select("logo_url")
+      .eq("mint_address", token.mintAddress)
+      .maybeSingle();
+    logoUrl = await resolveLogoUrl(token.mintAddress, existing?.logo_url ?? null);
+  }
+
+  const { data, error } = await supabaseAdmin.from("tokens").upsert({ mint_address: token.mintAddress, name: token.name, symbol: token.symbol, decimals: token.decimals, logo_url: logoUrl, first_seen_at: token.firstSeenAt ?? now, discovery_time: token.discoveredAt, last_updated_at: now, metadata: { source: token.source, source_kind: token.sourceKind, raw: token.raw } }, { onConflict: "mint_address" }).select("id").single();
   if (error) throw new Error(`token upsert failed: ${error.message}`);
   const tokenId = String(data.id);
   await supabaseAdmin.from("token_sources").upsert({ token_id: tokenId, provider: token.source, source_kind: token.sourceKind, source_id: token.sourceId, first_seen_at: token.firstSeenAt ?? now, last_seen_at: now, raw: token.raw }, { onConflict: "token_id,provider,source_kind,source_id" });
   await supabaseAdmin.from("token_discovery_events").insert({ token_id: tokenId, provider: token.source, event_type: token.sourceKind, discovered_at: token.discoveredAt, payload: token.raw });
   await supabaseAdmin.from("token_scan_jobs").insert({ token_id: tokenId, job_type: "analysis", status: "queued", priority: 50, scheduled_at: now });
-  await supabaseAdmin.from("token_metadata_cache").upsert({ token_id: tokenId, provider: token.source, name: token.name, symbol: token.symbol, logo_url: token.logoUrl, decimals: token.decimals, fetched_at: now, raw: token.raw }, { onConflict: "token_id,provider" });
+  await supabaseAdmin.from("token_metadata_cache").upsert({ token_id: tokenId, provider: token.source, name: token.name, symbol: token.symbol, logo_url: logoUrl, decimals: token.decimals, fetched_at: now, raw: token.raw }, { onConflict: "token_id,provider" });
 }
 
 export async function discoverTokens(): Promise<DiscoveryRunResult> {
