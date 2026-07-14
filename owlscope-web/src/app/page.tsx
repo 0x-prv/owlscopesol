@@ -98,28 +98,28 @@ export default async function HomePage({
   const events = await getEvents(validFilter);
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
-      <div className="mb-6 flex flex-col gap-2">
-        <h1 className="font-display text-2xl font-semibold text-foreground">
+    <main className="mx-auto max-w-2xl px-4 py-10">
+      <div className="mb-7 flex flex-col gap-2">
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
           OwlScope
         </h1>
 
         <p className="text-sm text-muted">
-          Live Solana behavior events. No trading signals, no hype.
+          Live Solana behavior events, ranked by observable on-chain changes. No trading signals, no hype.
         </p>
       </div>
 
-      <div className="mb-3">
+      <div className="mb-4">
         <SearchBar />
       </div>
 
-      <p className="mb-5 text-xs text-muted">
+      <p className="mb-6 text-xs leading-5 text-muted">
         Search by mint, symbol, or name. OwlScope uses persisted
         intelligence first, then live provider lookup when needed.
         No fake rankings, no hype.
       </p>
 
-      <nav className="mb-5 flex flex-wrap gap-2">
+      <nav className="mb-6 flex flex-wrap gap-2">
         {FILTERS.map((item) => (
           <Link
             key={item.value}
@@ -144,7 +144,7 @@ export default async function HomePage({
           No behavior events detected yet for this filter.
         </p>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3.5">
           {events.map((event) => (
             <EventCard key={event.id} event={event} />
           ))}
