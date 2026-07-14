@@ -112,15 +112,15 @@ Queued jobs are represented in `token_scan_jobs`. `analyzeQueuedTokens()` runs t
 - `GET /api/search?q=` — search Supabase first, then live providers.
 - `POST /api/discover` — run one discovery cycle.
 - `GET /api/new` — newest persisted discoveries.
-- `GET /api/trending` — real persisted market/risk signals only.
 
 ### UI pages
 
 - `/` — Analyze/search.
 - `/new` — Newest real discoveries.
-- `/trending` — Real persisted signal view.
+- `/intelligence` — First-party OwlScope intelligence from persisted analyses and behavior events.
+- `/trending` — Compatibility redirect to `/intelligence`.
 - `/token/[mint]` — Token intelligence report.
 
 ### Remaining limitations
 
-Trending is intentionally conservative: it only exposes real persisted signals and does not invent popularity. Alert delivery and authenticated watchlists have schema support but still require productized auth, notification channels, and dedicated worker scheduling.
+OwlScope Intelligence is intentionally conservative: it only exposes persisted token analyses and behavior events produced by the application. Alert delivery and authenticated watchlists have schema support but still require productized auth, notification channels, and dedicated worker scheduling.
