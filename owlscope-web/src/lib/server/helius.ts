@@ -7,6 +7,7 @@ export type AssetInfo = {
   symbol: string | null;
   decimals: number | null;
   rawSupply: string | null;
+  logoUrl: string | null;
   mintAuthority: string | null;
   freezeAuthority: string | null;
   isMutable: boolean | null;
@@ -34,6 +35,17 @@ function record(value: unknown): JsonRecord { return typeof value === "object" &
 function str(value: unknown): string | null { return typeof value === "string" && value.length > 0 ? value : null; }
 function num(value: unknown): number | null { return typeof value === "number" && Number.isFinite(value) ? value : null; }
 
+function imageFileUri(files: unknown): string | null {
+  if (!Array.isArray(files)) return null;
+  for (const file of files) {
+    const entry = record(file);
+    const mime = str(entry.mime);
+    const uri = str(entry.uri);
+    if (mime?.startsWith("image/") && uri) return uri;
+  }
+  return null;
+}
+
 function heliusErrorMessage(json: JsonRecord, label: string): string {
   const error = record(json.error);
   const message = str(error.message);
@@ -46,6 +58,7 @@ export async function getAssetInfo(mintAddress: string): Promise<AssetInfo> {
   if (json.error) throw new Error(`Helius getAsset error`);
   const asset = record(json.result);
   const content = record(asset.content);
+  const links = record(content.links);
   const metadata = record(content.metadata);
   const tokenInfo = record(asset.token_info);
   return {
@@ -53,6 +66,7 @@ export async function getAssetInfo(mintAddress: string): Promise<AssetInfo> {
     symbol: str(metadata.symbol) ?? str(tokenInfo.symbol),
     decimals: num(tokenInfo.decimals),
     rawSupply: tokenInfo.supply != null ? String(tokenInfo.supply) : null,
+    logoUrl: str(links.image) ?? imageFileUri(content.files),
     mintAuthority: str(tokenInfo.mint_authority),
     freezeAuthority: str(tokenInfo.freeze_authority),
     isMutable: typeof asset.mutable === "boolean" ? asset.mutable : null,
