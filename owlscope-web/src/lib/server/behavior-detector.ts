@@ -2,6 +2,8 @@ import "server-only";
 import { getAssetInfo, getTopHolders } from "./helius";
 import { computeTopHolderPct, toUiSupply } from "./risk-engine";
 import { supabaseAdmin } from "./supabase-admin";
+import { authorityEventFingerprint, authorityState, holderEventFingerprint, shouldEmitHolderConcentration } from "./monitoring-core.mjs";
+import { loadDueTrackedTokens, markTrackedTokenFailure, markTrackedTokenSuccess } from "./monitoring";
 
 // Tuned conservatively for MVP scope — authority + holder concentration only.
 const HOLDER_CONCENTRATION_DELTA_THRESHOLD = 10; // percentage points
@@ -22,10 +24,11 @@ async function insertEvent(params: {
   title: string;
   summary: string;
   evidence: { evidenceType: string; beforeValue: unknown; afterValue: unknown };
+  fingerprint: string;
 }) {
   const { data: event, error } = await supabaseAdmin
     .from("behavior_events")
-    .insert({
+    .upsert({
       event_type: params.eventType,
       severity: params.severity,
       confidence: params.confidence,
@@ -33,15 +36,17 @@ async function insertEvent(params: {
       title: params.title,
       summary: params.summary,
       detected_at: new Date().toISOString(),
-        occurred_at: new Date().toISOString(),
-    })
+      occurred_at: new Date().toISOString(),
+      event_fingerprint: params.fingerprint,
+    }, { onConflict: "event_fingerprint", ignoreDuplicates: true })
     .select("id")
-    .single();
+    .maybeSingle();
 
-  if (error || !event) {
-    console.error("[behavior-detector] failed to insert event:", error?.message);
+  if (error) {
+    console.error("[behavior-detector] failed to insert event:", error.message);
     return;
   }
+  if (!event) return;
 
   const { error: evidenceError } = await supabaseAdmin.from("behavior_event_evidence").insert({
     event_id: event.id,
@@ -67,17 +72,17 @@ async function checkAuthorityChange(token: WatchedToken) {
 
   const { data: lastSnapshot } = await supabaseAdmin
     .from("authority_snapshots")
-    .select("mint_authority, freeze_authority")
+    .select("id, mint_authority, freeze_authority")
     .eq("token_id", token.id)
     .order("snapshot_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  await supabaseAdmin.from("authority_snapshots").insert({
+  const { data: currentSnapshot } = await supabaseAdmin.from("authority_snapshots").insert({
     token_id: token.id,
     mint_authority: assetInfo.mintAuthority,
     freeze_authority: assetInfo.freezeAuthority,
-  });
+  }).select("id").single();
 
   if (!lastSnapshot) return; // first observation, nothing to compare yet
 
@@ -102,10 +107,11 @@ async function checkAuthorityChange(token: WatchedToken) {
     summary: renounced
       ? "Authority state changed to null since the last check."
       : "Authority state changed to a different address since the last check.",
+    fingerprint: authorityEventFingerprint({ tokenId: token.id, severity: AUTHORITY_CHANGE_SEVERITY, previousState: authorityState(lastSnapshot.mint_authority, lastSnapshot.freeze_authority), currentState: authorityState(assetInfo.mintAuthority, assetInfo.freezeAuthority), currentSnapshotId: currentSnapshot?.id ?? null }),
     evidence: {
       evidenceType: "account_state",
-      beforeValue: lastSnapshot,
-      afterValue: { mint_authority: assetInfo.mintAuthority, freeze_authority: assetInfo.freezeAuthority },
+      beforeValue: { snapshot_id: lastSnapshot.id, mint_authority: lastSnapshot.mint_authority, freeze_authority: lastSnapshot.freeze_authority },
+      afterValue: { snapshot_id: currentSnapshot?.id ?? null, mint_authority: assetInfo.mintAuthority, freeze_authority: assetInfo.freezeAuthority },
     },
   });
 }
@@ -129,22 +135,22 @@ async function checkHolderConcentration(token: WatchedToken) {
 
   const { data: lastSnapshot } = await supabaseAdmin
     .from("holder_snapshots")
-    .select("top_10_pct")
+    .select("id, top_10_pct")
     .eq("token_id", token.id)
     .order("snapshot_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  await supabaseAdmin.from("holder_snapshots").insert({
+  const { data: currentSnapshot } = await supabaseAdmin.from("holder_snapshots").insert({
     token_id: token.id,
     top_10_pct: currentTop10,
     top_holders: topHolders.slice(0, 10),
-  });
+  }).select("id").single();
 
   if (!lastSnapshot || lastSnapshot.top_10_pct === null) return;
 
   const delta = currentTop10 - lastSnapshot.top_10_pct;
-  if (delta < HOLDER_CONCENTRATION_DELTA_THRESHOLD) return;
+  if (delta < HOLDER_CONCENTRATION_DELTA_THRESHOLD || !shouldEmitHolderConcentration(lastSnapshot.top_10_pct, currentTop10)) return;
 
   const symbol = token.symbol ? `$${token.symbol}` : token.mint_address;
 
@@ -157,36 +163,30 @@ async function checkHolderConcentration(token: WatchedToken) {
     summary: `Top 10 visible holder concentration moved from ${lastSnapshot.top_10_pct.toFixed(
       1
     )}% to ${currentTop10.toFixed(1)}% since the last check.`,
+    fingerprint: holderEventFingerprint({ tokenId: token.id, severity: HOLDER_CONCENTRATION_SEVERITY, previousPct: lastSnapshot.top_10_pct, currentPct: currentTop10, currentSnapshotId: currentSnapshot?.id ?? null }),
     evidence: {
       evidenceType: "snapshot_diff",
-      beforeValue: { top_10_pct: lastSnapshot.top_10_pct },
-      afterValue: { top_10_pct: currentTop10, top_holders: topHolders.slice(0, 10) },
+      beforeValue: { snapshot_id: lastSnapshot.id, top_10_pct: lastSnapshot.top_10_pct },
+      afterValue: { snapshot_id: currentSnapshot?.id ?? null, top_10_pct: currentTop10, top_holders: topHolders.slice(0, 10) },
     },
   });
 }
 
 export async function runDetectionCycle(): Promise<{ checked: number; errors: number }> {
-  const { data: tokens, error } = await supabaseAdmin
-    .from("tokens")
-    .select("id, mint_address, symbol")
-    .order("last_updated_at", { ascending: false })
-    .limit(50);
-
-  if (error) {
-    console.error("[behavior-detector] failed to load watched tokens:", error.message);
-    return { checked: 0, errors: 1 };
-  }
-
+  const tracked = await loadDueTrackedTokens();
   let errors = 0;
-  for (const token of (tokens ?? []) as WatchedToken[]) {
+  for (const row of tracked as Array<{ id:string; token_id:string; mint_address:string; priority:number; scan_failures:number; tokens?: WatchedToken | WatchedToken[] | null }>) {
+    const relation = Array.isArray(row.tokens) ? row.tokens[0] : row.tokens;
+    const token: WatchedToken = { id: row.token_id, mint_address: row.mint_address, symbol: relation?.symbol ?? null };
     try {
       await checkAuthorityChange(token);
       await checkHolderConcentration(token);
+      await markTrackedTokenSuccess(row.id, row.priority ?? 0);
     } catch (err) {
       errors += 1;
+      await markTrackedTokenFailure(row.id, row.scan_failures ?? 0);
       console.error(`[behavior-detector] error processing ${token.mint_address}:`, err);
     }
   }
-
-  return { checked: tokens?.length ?? 0, errors };
+  return { checked: tracked.length, errors };
 }

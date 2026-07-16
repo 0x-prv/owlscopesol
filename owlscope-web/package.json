@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test:auth": "node --test src/test/auth-hardening.test.mjs",
-    "test:phase2": "node --test src/test/phase2.test.mjs"
+    "test:phase2": "node --test src/test/phase2.test.mjs",
+    "test:monitoring": "node --test src/test/monitoring-intelligence.test.mjs src/test/monitoring-persistence.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.2",
