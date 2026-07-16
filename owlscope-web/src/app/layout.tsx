@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import "./globals.css";
+import { WalletAuthButton } from "@/components/auth/WalletAuthButton";
 
 export const metadata: Metadata = {
   title: "OwlScope | Solana Token Intelligence",
@@ -33,12 +34,15 @@ export default function RootLayout({
                 <NavLink href="/">Analyze</NavLink>
                 <NavLink href="/new">New</NavLink>
                 <NavLink href="/intelligence">Intelligence</NavLink>
+                <NavLink href="/dashboard">Dashboard</NavLink>
               </div>
             </details>
             <div className="hidden gap-2 text-sm text-muted sm:flex">
               <NavLink href="/">Analyze</NavLink>
               <NavLink href="/new">New</NavLink>
               <NavLink href="/intelligence">Intelligence</NavLink>
+              <NavLink href="/dashboard">Dashboard</NavLink>
+              <WalletAuthButton />
             </div>
           </nav>
         </header>
