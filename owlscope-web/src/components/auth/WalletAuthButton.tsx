@@ -1,9 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
 
-type Provider = { publicKey?: { toString(): string }; isPhantom?: boolean; connect?: () => Promise<{ publicKey?: { toString(): string } }>; disconnect?: () => Promise<void>; signMessage?: (message: Uint8Array, encoding?: string) => Promise<{ signature: Uint8Array }>; on?: (event: string, cb: () => void) => void; off?: (event: string, cb: () => void) => void };
+type SignMessageResponse = { signature: Uint8Array } | Uint8Array;
+type Provider = { publicKey?: { toString(): string }; isPhantom?: boolean; connect?: () => Promise<{ publicKey?: { toString(): string } }>; disconnect?: () => Promise<void>; signMessage?: (message: Uint8Array, encoding?: string) => Promise<SignMessageResponse>; on?: (event: string, cb: () => void) => void; off?: (event: string, cb: () => void) => void };
 const getProvider = (): Provider | null => (typeof window !== "undefined" ? ((window as unknown as { solana?: Provider }).solana ?? null) : null);
-const b64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes));
+function normalizeSignature(value: SignMessageResponse) { const signature = value instanceof Uint8Array ? value : value.signature; return signature instanceof Uint8Array ? new Uint8Array(signature) : null; }
+function b64(bytes: Uint8Array) { let binary = ""; for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(binary); }
 
 export function WalletAuthButton() {
   const [wallet, setWallet] = useState<string | null>(null); const [message, setMessage] = useState<string | null>(null); const [busy, setBusy] = useState(false);
@@ -21,8 +23,10 @@ export function WalletAuthButton() {
       const challenge = await nonceRes.json();
       if ((provider.publicKey?.toString() ?? walletAddress) !== walletAddress) { setMessage("Wallet account changed. Please try again."); return; }
       const signed = await provider.signMessage(new TextEncoder().encode(challenge.message), "utf8");
+      const signature = normalizeSignature(signed);
+      if (!signature || signature.length !== 64) { setMessage("Wallet returned an invalid signature."); return; }
       if ((provider.publicKey?.toString() ?? walletAddress) !== walletAddress) { setMessage("Wallet account changed. Please try again."); return; }
-      const verifyRes = await fetch("/api/auth/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ walletAddress, nonce: challenge.nonce, message: challenge.message, signature: b64(signed.signature) }) });
+      const verifyRes = await fetch("/api/auth/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ walletAddress, nonce: challenge.nonce, message: challenge.message, signature: b64(signature) }) });
       if (!verifyRes.ok) { setMessage("Wallet authentication failed."); return; }
       await refresh();
     } catch { setMessage("Wallet request was cancelled or failed."); } finally { setBusy(false); }
