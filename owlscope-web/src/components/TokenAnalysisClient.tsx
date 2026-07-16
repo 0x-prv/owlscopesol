@@ -5,6 +5,7 @@ import AiSummaryCard from "@/components/AiSummaryCard";
 import RiskCard from "@/components/RiskCard";
 import DataProvenance from "@/components/DataProvenance";
 import TokenHeader from "@/components/TokenHeader";
+import TokenUserControls from "@/components/TokenUserControls";
 import TopHoldersTable from "@/components/TopHoldersTable";
 import { ErrorState, SkeletonBlock } from "@/components/UiState";
 import type { TokenAnalysisApiResponse, TokenAnalysisApiResult, TokenIntelligenceResponse } from "@/types/token-intelligence";
@@ -56,6 +57,7 @@ export default function TokenAnalysisClient({ mintAddress }: Props) {
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
       <TokenHeader token={view.token} snapshot={view.snapshot} />
+      <TokenUserControls mintAddress={mintAddress} />
       <RiskCard risk={view.risk} />
       <AiSummaryCard ai={view.ai} />
       <CurrentAssessment risk={view.risk} />

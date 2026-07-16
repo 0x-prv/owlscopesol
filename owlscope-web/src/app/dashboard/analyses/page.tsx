@@ -1,0 +1,9 @@
+import Link from "next/link";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { SESSION_COOKIE_NAME } from "@/lib/server/auth/config";
+import { validateSessionToken } from "@/lib/server/auth/session";
+import { listSavedAnalyses } from "@/lib/server/phase2/repositories";
+import { pageParams } from "@/lib/server/phase2/validation";
+import { Shell, Risk, fmt, short } from "../ui";
+export default async function AnalysesPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){ const session=await validateSessionToken((await cookies()).get(SESSION_COOKIE_NAME)?.value); if(!session) redirect("/"); const sp=await searchParams; const qs=new URLSearchParams(Object.entries(sp).flatMap(([k,v])=>v?[[k,v]]:[])); const p=pageParams(qs); const data=await listSavedAnalyses(session.userId,p.from,p.to); return <Shell><h1 className="font-display text-3xl font-semibold">Saved Analyses</h1><p className="text-muted">Immutable saved intelligence snapshots. Current token intelligence may differ.</p><div className="grid gap-3">{data.rows.length?data.rows.map(a=><article key={a.id} className="rounded-xl border border-border bg-background p-4"><p className="text-xs font-semibold text-accent">Saved Analysis</p><h2 className="font-semibold">{a.tokens?.symbol ?? a.tokens?.name ?? short(a.mint_address)}</h2><p className="text-sm text-muted">{short(a.mint_address)} · saved {fmt(a.created_at)} · analyzed {fmt(a.analyzed_at)}</p><div className="mt-2"><Risk score={a.risk_score} level={a.risk_level}/></div><Link className="mt-3 inline-block text-sm text-accent" href={`/dashboard/analyses/${a.id}`}>Open snapshot</Link></article>):<p className="rounded-xl border border-border p-6 text-muted">No saved analyses yet. <Link className="text-accent" href="/">Analyze a Token</Link></p>}</div><p className="text-sm text-muted">Page {p.page} · {data.count} total · page size {p.limit}</p></Shell> }
