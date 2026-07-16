@@ -3,11 +3,82 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { generateKeyPairSync, sign, verify, createHash } from 'node:crypto';
 const migration = readFileSync(new URL('../../supabase/migrations/20260716000000_auth_hardening.sql', import.meta.url), 'utf8');
+const authRpcFixMigration = readFileSync(new URL('../../supabase/migrations/20260716020000_fix_auth_rpc_ambiguity.sql', import.meta.url), 'utf8');
 const verifyRoute = readFileSync(new URL('../app/api/auth/verify/route.ts', import.meta.url), 'utf8');
 const nonceRoute = readFileSync(new URL('../app/api/auth/nonce/route.ts', import.meta.url), 'utf8');
 const sessionLib = readFileSync(new URL('../lib/server/auth/session.ts', import.meta.url), 'utf8');
 const config = readFileSync(new URL('../lib/server/auth/config.ts', import.meta.url), 'utf8');
 const sha256Hex = (v) => createHash('sha256').update(v).digest('hex');
+
+
+test('authenticate_wallet_nonce migration qualifies ambiguous SQL references', () => {
+  assert.match(authRpcFixMigration, /from public\.auth_nonces as n\s+where n\.nonce = p_nonce\s+for update/is);
+  assert.match(authRpcFixMigration, /update public\.auth_nonces as n\s+set used_at = now\(\)\s+where n\.id = v_nonce\.id/is);
+  assert.match(authRpcFixMigration, /insert into public\.wallet_users as wu/is);
+  assert.match(authRpcFixMigration, /on conflict on constraint wallet_users_wallet_address_key/i);
+  assert.match(authRpcFixMigration, /insert into public\.wallet_sessions as ws/is);
+  assert.doesNotMatch(authRpcFixMigration, /on conflict \(wallet_address\)/i);
+});
+
+function createAuthRpcHarness() {
+  let nextId = 1;
+  const now = () => new Date('2026-07-16T02:00:00.000Z');
+  const state = { auth_nonces: [], wallet_users: [], wallet_sessions: [] };
+  const id = (prefix) => `${prefix}-${nextId++}`;
+  const invokeAuthenticateWalletNonce = ({ p_nonce, p_wallet_address, p_session_token_hash, p_session_expires_at }) => {
+    const nonce = state.auth_nonces.find((row) => row.nonce === p_nonce);
+    if (!nonce) throw Object.assign(new Error('invalid_nonce'), { code: 'P0001' });
+    if (nonce.wallet_address !== p_wallet_address) throw Object.assign(new Error('wallet_mismatch'), { code: 'P0001' });
+    if (new Date(nonce.expires_at).getTime() <= now().getTime()) throw Object.assign(new Error('nonce_expired'), { code: 'P0001' });
+    if (nonce.used_at !== null) throw Object.assign(new Error('nonce_used'), { code: 'P0001' });
+    nonce.used_at = now().toISOString();
+
+    let user = state.wallet_users.find((row) => row.wallet_address === p_wallet_address);
+    if (!user) {
+      user = { id: id('user'), wallet_address: p_wallet_address, created_at: now().toISOString(), last_login_at: now().toISOString() };
+      state.wallet_users.push(user);
+    } else {
+      user.last_login_at = now().toISOString();
+    }
+
+    const session = { id: id('session'), user_id: user.id, session_token_hash: p_session_token_hash, created_at: now().toISOString(), expires_at: p_session_expires_at, revoked_at: null, last_seen_at: now().toISOString() };
+    state.wallet_sessions.push(session);
+    return { user_id: user.id, wallet_address: p_wallet_address, session_id: session.id, session_expires_at: p_session_expires_at };
+  };
+  return { state, rpc: invokeAuthenticateWalletNonce };
+}
+
+test('authenticate_wallet_nonce RPC succeeds once, stores hashed session, and rejects nonce reuse', () => {
+  const { state, rpc } = createAuthRpcHarness();
+  const rawSession = 'raw-session-token';
+  const sessionHash = sha256Hex(rawSession);
+  state.auth_nonces.push({ id: 'nonce-1', wallet_address: 'wallet-a', nonce: 'nonce-a', expires_at: '2026-07-16T02:05:00.000Z', used_at: null });
+
+  const first = rpc({ p_nonce: 'nonce-a', p_wallet_address: 'wallet-a', p_session_token_hash: sessionHash, p_session_expires_at: '2026-07-23T02:00:00.000Z' });
+
+  assert.equal(first.wallet_address, 'wallet-a');
+  assert.equal(state.wallet_users.length, 1);
+  assert.equal(state.wallet_users[0].wallet_address, 'wallet-a');
+  assert.equal(state.wallet_sessions.length, 1);
+  assert.equal(state.wallet_sessions[0].session_token_hash, sessionHash);
+  assert.notEqual(state.wallet_sessions[0].session_token_hash, rawSession);
+  assert.equal(state.auth_nonces[0].used_at, '2026-07-16T02:00:00.000Z');
+  assert.throws(() => rpc({ p_nonce: 'nonce-a', p_wallet_address: 'wallet-a', p_session_token_hash: sha256Hex('second-token'), p_session_expires_at: '2026-07-23T02:00:00.000Z' }), /nonce_used/);
+});
+
+test('authenticate_wallet_nonce RPC upserts an existing wallet without ambiguous wallet_address failure', () => {
+  const { state, rpc } = createAuthRpcHarness();
+  state.wallet_users.push({ id: 'user-existing', wallet_address: 'wallet-existing', created_at: '2026-07-15T00:00:00.000Z', last_login_at: '2026-07-15T00:00:00.000Z' });
+  state.auth_nonces.push({ id: 'nonce-existing', wallet_address: 'wallet-existing', nonce: 'nonce-existing', expires_at: '2026-07-16T02:05:00.000Z', used_at: null });
+
+  const result = rpc({ p_nonce: 'nonce-existing', p_wallet_address: 'wallet-existing', p_session_token_hash: sha256Hex('existing-session'), p_session_expires_at: '2026-07-23T02:00:00.000Z' });
+
+  assert.equal(result.user_id, 'user-existing');
+  assert.equal(state.wallet_users.length, 1);
+  assert.equal(state.wallet_sessions.length, 1);
+  assert.equal(state.auth_nonces[0].used_at, '2026-07-16T02:00:00.000Z');
+});
+
 test('malformed Solana public key rejected', () => { assert.match(nonceRoute, /isValidSolanaPublicKey\(walletAddress\)/); assert.match(verifyRoute, /!isValidSolanaPublicKey\(walletAddress\)/); });
 test('expired nonce rejected', () => assert.match(verifyRoute, /expires_at\)\.getTime\(\) <= Date\.now/));
 test('used nonce rejected', () => assert.match(verifyRoute, /nonceRow\.used_at/));
