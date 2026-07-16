@@ -6,6 +6,7 @@ create table if not exists saved_analyses (
   mint_address text not null,
   risk_report_id uuid null references public.risk_reports(id) on delete set null,
   token_snapshot_id uuid null references public.token_snapshots(id) on delete set null,
+  idempotency_key text null,
   risk_score integer null,
   risk_level text null,
   confidence numeric null,
@@ -15,8 +16,9 @@ create table if not exists saved_analyses (
   analyzed_at timestamptz not null,
   created_at timestamptz not null default now(),
   constraint saved_analyses_mint_not_empty check (btrim(mint_address) <> ''),
+  constraint saved_analyses_idempotency_key_not_empty check (idempotency_key is null or btrim(idempotency_key) <> ''),
   constraint saved_analyses_risk_score_range check (risk_score is null or risk_score between 0 and 100),
-  constraint saved_analyses_confidence_range check (confidence is null or confidence between 0 and 1),
+  constraint saved_analyses_confidence_range check (confidence is null or confidence between 0 and 100),
   constraint saved_analyses_reasons_array check (jsonb_typeof(reasons) = 'array'),
   constraint saved_analyses_source_metadata_object check (jsonb_typeof(source_metadata) = 'object'),
   constraint saved_analyses_analyzed_not_future check (analyzed_at <= created_at + interval '5 minutes')
@@ -30,6 +32,7 @@ create table if not exists watchlist_items (
   constraint watchlist_items_user_mint_unique unique(user_id, mint_address),
   constraint watchlist_items_mint_not_empty check (btrim(mint_address) <> '')
 );
+create unique index if not exists saved_analyses_user_idempotency_idx on saved_analyses(user_id, idempotency_key) where idempotency_key is not null;
 create index if not exists saved_analyses_user_created_idx on saved_analyses(user_id, created_at desc, id desc);
 create index if not exists saved_analyses_user_mint_idx on saved_analyses(user_id, mint_address, created_at desc);
 create index if not exists watchlist_items_user_created_idx on watchlist_items(user_id, created_at desc, id desc);
