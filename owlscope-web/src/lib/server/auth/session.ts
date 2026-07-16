@@ -21,7 +21,7 @@ export async function validateSessionToken(token: string | undefined, response?:
     const { error: refreshError } = await supabaseAdmin.from("wallet_sessions").update({ last_seen_at: new Date().toISOString() }).eq("id", data.id);
     if (refreshError) console.error("last_seen refresh failed", { code: refreshError.code });
   }
-  return { sessionId: data.id as string, userId: data.user_id as string, walletAddress: user.wallet_address as string, expiresAt: data.expires_at as string };
+  return { sessionId: data.id as string, userId: data.user_id as string, walletAddress: user.wallet_address as string, expiresAt: data.expires_at as string, previousLastSeenAt: data.last_seen_at as string };
 }
 export async function validateSession(request: NextRequest, response?: NextResponse) {
   return validateSessionToken(request.cookies.get(SESSION_COOKIE_NAME)?.value, response);
