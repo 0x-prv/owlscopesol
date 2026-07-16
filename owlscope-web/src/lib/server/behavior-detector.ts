@@ -78,11 +78,11 @@ async function checkAuthorityChange(token: WatchedToken) {
     .limit(1)
     .maybeSingle();
 
-  await supabaseAdmin.from("authority_snapshots").insert({
+  const { data: currentSnapshot } = await supabaseAdmin.from("authority_snapshots").insert({
     token_id: token.id,
     mint_authority: assetInfo.mintAuthority,
     freeze_authority: assetInfo.freezeAuthority,
-  });
+  }).select("id").single();
 
   if (!lastSnapshot) return; // first observation, nothing to compare yet
 
@@ -107,11 +107,11 @@ async function checkAuthorityChange(token: WatchedToken) {
     summary: renounced
       ? "Authority state changed to null since the last check."
       : "Authority state changed to a different address since the last check.",
-    fingerprint: authorityEventFingerprint({ tokenId: token.id, severity: AUTHORITY_CHANGE_SEVERITY, previousState: authorityState(lastSnapshot.mint_authority, lastSnapshot.freeze_authority), currentState: authorityState(assetInfo.mintAuthority, assetInfo.freezeAuthority) }),
+    fingerprint: authorityEventFingerprint({ tokenId: token.id, severity: AUTHORITY_CHANGE_SEVERITY, previousState: authorityState(lastSnapshot.mint_authority, lastSnapshot.freeze_authority), currentState: authorityState(assetInfo.mintAuthority, assetInfo.freezeAuthority), currentSnapshotId: currentSnapshot?.id ?? null }),
     evidence: {
       evidenceType: "account_state",
       beforeValue: { snapshot_id: lastSnapshot.id, mint_authority: lastSnapshot.mint_authority, freeze_authority: lastSnapshot.freeze_authority },
-      afterValue: { mint_authority: assetInfo.mintAuthority, freeze_authority: assetInfo.freezeAuthority },
+      afterValue: { snapshot_id: currentSnapshot?.id ?? null, mint_authority: assetInfo.mintAuthority, freeze_authority: assetInfo.freezeAuthority },
     },
   });
 }
@@ -163,7 +163,7 @@ async function checkHolderConcentration(token: WatchedToken) {
     summary: `Top 10 visible holder concentration moved from ${lastSnapshot.top_10_pct.toFixed(
       1
     )}% to ${currentTop10.toFixed(1)}% since the last check.`,
-    fingerprint: holderEventFingerprint({ tokenId: token.id, severity: HOLDER_CONCENTRATION_SEVERITY, previousPct: lastSnapshot.top_10_pct, currentPct: currentTop10 }),
+    fingerprint: holderEventFingerprint({ tokenId: token.id, severity: HOLDER_CONCENTRATION_SEVERITY, previousPct: lastSnapshot.top_10_pct, currentPct: currentTop10, currentSnapshotId: currentSnapshot?.id ?? null }),
     evidence: {
       evidenceType: "snapshot_diff",
       beforeValue: { snapshot_id: lastSnapshot.id, top_10_pct: lastSnapshot.top_10_pct },
