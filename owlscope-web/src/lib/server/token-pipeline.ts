@@ -4,6 +4,7 @@ import { getAssetInfo, getTopHolders, type AssetInfo } from "./helius";
 import { getPriceData, type PriceData } from "./jupiter";
 import { computeRiskReport, type RiskReport, type TopHolder } from "./risk-engine";
 import { supabaseAdmin } from "./supabase-admin";
+import { safeEnrollTrackedToken } from "./monitoring";
 
 export type DataAvailabilityWarning = {
   provider: "helius" | "jupiter" | "supabase" | "groq";
@@ -124,6 +125,8 @@ export async function runTokenPipeline(mintAddress: string): Promise<TokenAnalys
   const explanation = await explainRiskReport({ overallRiskScore: report.overall_risk_score, overallRiskLabel: report.overall_risk_label, confidence: report.confidence, findings: report.findings, caveats: report.risk_factors.caveats });
   const { error } = await supabaseAdmin.from("risk_reports").update({ ai_summary: explanation.summary, ai_headline: explanation.headline, ai_findings: explanation.key_findings, ai_limitations: explanation.limitations, ai_provider: explanation.provider, ai_model: explanation.model, ai_generated_at: explanation.generated_at }).eq("id", riskReportId);
   if (error) throw new Error(`Supabase AI explanation update failed: ${error.message}`);
+
+  await safeEnrollTrackedToken({ tokenId, mintAddress, source: "analyzed" });
 
   return { token: { id: tokenId, mintAddress, symbol: assetInfo?.symbol ?? null, logoUrl: tokenRecord.logoUrl, name: assetInfo?.name ?? null, decimals: assetInfo?.decimals ?? null, supply: assetInfo?.rawSupply ?? null, mintAuthority: assetInfo?.mintAuthority ?? null, freezeAuthority: assetInfo?.freezeAuthority ?? null }, snapshot, risk: { id: riskReportId, overallRiskScore: report.overall_risk_score, overallRiskLabel: report.overall_risk_label, confidence: report.confidence, findings: report.findings, caveats: report.risk_factors.caveats, factors: report.risk_factors }, ai: { headline: explanation.headline, summary: explanation.summary, findings: explanation.key_findings, limitations: explanation.limitations, provider: explanation.provider, model: explanation.model, generatedAt: explanation.generated_at }, dataAvailabilityWarnings };
 }

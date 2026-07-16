@@ -1,0 +1,16 @@
+export const TRACKING_PRIORITY: Record<string, number>;
+export const SCAN_INTERVAL_HOURS: Record<string, number>;
+export const MONITORING_BATCH_SIZE: number;
+export const ANALYZED_RETENTION_DAYS: number;
+export const HOLDER_CONCENTRATION_DELTA_THRESHOLD_PP: number;
+export function priorityForSource(source:string): number;
+export function intervalHoursForPriority(priority:number): number;
+export function nextScanAt(now?:Date, priority?:number): string;
+export function failureBackoffAt(failures:number, now?:Date): string;
+export function mergeSources(existing:unknown, source:string): string[];
+export function mergedPriority(existingPriority:unknown, sources:string[]): number;
+export function materialValueBucket(value:unknown): string;
+export function eventFingerprint(params:{tokenId:string;eventType:string;severity:number;beforeValue?:unknown;afterValue?:unknown;previousSnapshotId?:string|null;currentSnapshotId?:string|null;detectedAt?:string|Date}): string;
+export function selectDueTrackedTokens<T extends {is_active?:boolean;next_scan_at?:string|null;priority?:number|null;last_scanned_at?:string|null;scan_failures?:number|null;mint_address:string}>(rows:T[], nowIso?:string, limit?:number): T[];
+export function shouldEmitHolderConcentration(previousPct:unknown,currentPct:unknown): boolean;
+export function groupEventsByToken<T extends {tokenId:string;mintAddress:string;name?:string|null;symbol?:string|null;logoUrl?:string|null;eventType:string;severity?:number|null;confidence?:number|null;summary:string;detectedAt:string}>(events:T[], filter?:string): Array<{tokenId:string;mintAddress:string;name:string|null;symbol:string|null;logoUrl:string|null;highestSeverity:number|null;count:number;latestAt:string;latestSummary:string;eventTypes:string[];confidence:number|null;events:T[]}>;
