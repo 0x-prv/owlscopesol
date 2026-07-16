@@ -1,4 +1,5 @@
 -- OwlScope production monitoring: tracked token eligibility and behavior-event deduplication.
+-- sources[] is the canonical source of truth; source stores the computed highest-priority effective source for indexed reads.
 create table if not exists public.tracked_tokens (
   id uuid primary key default gen_random_uuid(),
   token_id uuid not null references public.tokens(id) on delete cascade,

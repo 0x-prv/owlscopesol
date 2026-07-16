@@ -2,7 +2,7 @@ import "server-only";
 import { getAssetInfo, getTopHolders } from "./helius";
 import { computeTopHolderPct, toUiSupply } from "./risk-engine";
 import { supabaseAdmin } from "./supabase-admin";
-import { eventFingerprint, shouldEmitHolderConcentration } from "./monitoring-core.mjs";
+import { authorityEventFingerprint, authorityState, holderEventFingerprint, shouldEmitHolderConcentration } from "./monitoring-core.mjs";
 import { loadDueTrackedTokens, markTrackedTokenFailure, markTrackedTokenSuccess } from "./monitoring";
 
 // Tuned conservatively for MVP scope — authority + holder concentration only.
@@ -107,10 +107,10 @@ async function checkAuthorityChange(token: WatchedToken) {
     summary: renounced
       ? "Authority state changed to null since the last check."
       : "Authority state changed to a different address since the last check.",
-    fingerprint: eventFingerprint({ tokenId: token.id, eventType: "authority_change", severity: AUTHORITY_CHANGE_SEVERITY, beforeValue: JSON.stringify(lastSnapshot), afterValue: JSON.stringify({ mint_authority: assetInfo.mintAuthority, freeze_authority: assetInfo.freezeAuthority }), previousSnapshotId: lastSnapshot.id }),
+    fingerprint: authorityEventFingerprint({ tokenId: token.id, severity: AUTHORITY_CHANGE_SEVERITY, previousState: authorityState(lastSnapshot.mint_authority, lastSnapshot.freeze_authority), currentState: authorityState(assetInfo.mintAuthority, assetInfo.freezeAuthority) }),
     evidence: {
       evidenceType: "account_state",
-      beforeValue: lastSnapshot,
+      beforeValue: { snapshot_id: lastSnapshot.id, mint_authority: lastSnapshot.mint_authority, freeze_authority: lastSnapshot.freeze_authority },
       afterValue: { mint_authority: assetInfo.mintAuthority, freeze_authority: assetInfo.freezeAuthority },
     },
   });
@@ -163,11 +163,11 @@ async function checkHolderConcentration(token: WatchedToken) {
     summary: `Top 10 visible holder concentration moved from ${lastSnapshot.top_10_pct.toFixed(
       1
     )}% to ${currentTop10.toFixed(1)}% since the last check.`,
-    fingerprint: eventFingerprint({ tokenId: token.id, eventType: "holder_concentration_spike", severity: HOLDER_CONCENTRATION_SEVERITY, beforeValue: lastSnapshot.top_10_pct, afterValue: currentTop10, previousSnapshotId: lastSnapshot.id, currentSnapshotId: currentSnapshot?.id }),
+    fingerprint: holderEventFingerprint({ tokenId: token.id, severity: HOLDER_CONCENTRATION_SEVERITY, previousPct: lastSnapshot.top_10_pct, currentPct: currentTop10 }),
     evidence: {
       evidenceType: "snapshot_diff",
-      beforeValue: { top_10_pct: lastSnapshot.top_10_pct },
-      afterValue: { top_10_pct: currentTop10, top_holders: topHolders.slice(0, 10) },
+      beforeValue: { snapshot_id: lastSnapshot.id, top_10_pct: lastSnapshot.top_10_pct },
+      afterValue: { snapshot_id: currentSnapshot?.id ?? null, top_10_pct: currentTop10, top_holders: topHolders.slice(0, 10) },
     },
   });
 }
