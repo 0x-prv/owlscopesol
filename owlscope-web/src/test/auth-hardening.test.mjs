@@ -40,3 +40,54 @@ test('malformed Base64 and non-64-byte signatures fail', () => { assert.equal(de
 test('Base64 encoding from the client round-trips correctly', () => { const bytes=Uint8Array.from({length:256},(_,i)=>i); assert.deepEqual(Buffer.from(clientBase64(bytes),'base64'), Buffer.from(bytes)); });
 test('leading-zero Solana public keys decode correctly', () => { assert.equal(base58Encode(Buffer.alloc(32)), '11111111111111111111111111111111'); assert.match(nonceRoute, /isValidSolanaPublicKey\(walletAddress\)/); });
 test('exact nonce route message shape signs and verifies successfully', () => { const {publicKey,privateKey}=generateKeyPairSync('ed25519'); const raw=publicKey.export({format:'der',type:'spki'}).subarray(-32); const wallet=base58Encode(raw); const nonce='nonce-token'; const issuedAt='2026-07-16T00:00:00.000Z'; const expiresAt='2026-07-16T00:05:00.000Z'; const message=['example.com wants you to sign in with your Solana wallet:',wallet,'','Sign in to OwlScope.','',`URI: https://example.com`,'Version: 1',`Nonce: ${nonce}`,`Issued At: ${issuedAt}`,`Expiration Time: ${expiresAt}`].join('\n'); const sig=sign(null,new TextEncoder().encode(message),privateKey).toString('base64'); assert.equal(verifyMessage(message,sig,raw), true); });
+
+function buildCanonicalAuthMessage({ walletAddress, nonce, issuedAt, expiresAt }) {
+  const normalize = (value, fieldName) => {
+    const timestamp = new Date(value);
+    if (Number.isNaN(timestamp.getTime())) throw new Error(`Invalid auth message ${fieldName}`);
+    return timestamp.toISOString();
+  };
+  const normalizedIssuedAt = normalize(issuedAt, 'issuedAt');
+  const normalizedExpiresAt = normalize(expiresAt, 'expiresAt');
+  return ['example.com wants you to sign in with your Solana wallet:', walletAddress, '', 'Sign in to OwlScope.', '', 'URI: https://example.com', 'Version: 1', `Nonce: ${nonce}`, `Issued At: ${normalizedIssuedAt}`, `Expiration Time: ${normalizedExpiresAt}`].join('\n');
+}
+
+const timestampFields = { walletAddress: 'wallet-address', nonce: 'nonce-token', issuedAt: '2026-07-16T01:23:45.123Z', expiresAt: '2026-07-16T01:28:45.123Z' };
+
+test('buildAuthMessage normalizes equivalent Z and +00:00 timestamps', () => {
+  assert.match(readFileSync(new URL('../lib/server/auth/message.ts', import.meta.url), 'utf8'), /toISOString\(\)/);
+  assert.equal(buildCanonicalAuthMessage(timestampFields), buildCanonicalAuthMessage({ ...timestampFields, issuedAt: '2026-07-16T01:23:45.123+00:00', expiresAt: '2026-07-16T01:28:45.123+00:00' }));
+});
+
+test('buildAuthMessage normalizes equivalent timestamps with another valid timezone offset', () => {
+  assert.equal(buildCanonicalAuthMessage(timestampFields), buildCanonicalAuthMessage({ ...timestampFields, issuedAt: '2026-07-15T20:23:45.123-05:00', expiresAt: '2026-07-15T20:28:45.123-05:00' }));
+});
+
+test('buildAuthMessage rejects invalid issuedAt', () => {
+  assert.throws(() => buildCanonicalAuthMessage({ ...timestampFields, issuedAt: 'not-a-date' }), /Invalid auth message issuedAt/);
+});
+
+test('buildAuthMessage rejects invalid expiresAt', () => {
+  assert.throws(() => buildCanonicalAuthMessage({ ...timestampFields, expiresAt: 'not-a-date' }), /Invalid auth message expiresAt/);
+});
+
+test('changed actual timestamp instant produces a different canonical message', () => {
+  assert.notEqual(buildCanonicalAuthMessage(timestampFields), buildCanonicalAuthMessage({ ...timestampFields, issuedAt: '2026-07-16T01:23:45.124Z' }));
+});
+
+test('exact nonce creation message rebuilds identically from database-style timestamptz strings', () => {
+  const created = buildCanonicalAuthMessage(timestampFields);
+  const rebuilt = buildCanonicalAuthMessage({ ...timestampFields, issuedAt: '2026-07-16T01:23:45.123+00:00', expiresAt: '2026-07-16T01:28:45.123+00:00' });
+  assert.equal(created, rebuilt);
+});
+
+test('valid generated Ed25519 signature verifies after canonical timestamp reconstruction', () => {
+  const { publicKey, privateKey } = generateKeyPairSync('ed25519');
+  const raw = publicKey.export({ format: 'der', type: 'spki' }).subarray(-32);
+  const walletAddress = base58Encode(raw);
+  const created = buildCanonicalAuthMessage({ ...timestampFields, walletAddress });
+  const reconstructed = buildCanonicalAuthMessage({ ...timestampFields, walletAddress, issuedAt: '2026-07-16T01:23:45.123+00:00', expiresAt: '2026-07-15T21:28:45.123-04:00' });
+  const sig = sign(null, new TextEncoder().encode(created), privateKey).toString('base64');
+  assert.equal(created, reconstructed);
+  assert.equal(verifyMessage(reconstructed, sig, raw), true);
+});
