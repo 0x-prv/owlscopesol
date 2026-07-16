@@ -1,0 +1,8 @@
+import { NextRequest, NextResponse } from "next/server";
+import { validateSession } from "@/lib/server/auth/session";
+import { deleteSavedAnalysis, getSavedAnalysis } from "@/lib/server/phase2/repositories";
+import { isUuid } from "@/lib/server/phase2/validation";
+const noStore = { "Cache-Control":"no-store" };
+type Ctx = { params: Promise<{ id:string }> };
+export async function GET(request:NextRequest, ctx:Ctx) { const session = await validateSession(request); if (!session) return NextResponse.json({ error:"Unauthenticated" }, { status:401, headers:noStore }); const { id } = await ctx.params; if (!isUuid(id)) return NextResponse.json({ error:"Invalid analysis id" }, { status:400, headers:noStore }); try { const row = await getSavedAnalysis(session.userId, id); if (!row) return NextResponse.json({ error:"Not found" }, { status:404, headers:noStore }); return NextResponse.json({ success:true, data:row }, { headers:noStore }); } catch { return NextResponse.json({ error:"Unable to load analysis" }, { status:500, headers:noStore }); } }
+export async function DELETE(request:NextRequest, ctx:Ctx) { const session = await validateSession(request); if (!session) return NextResponse.json({ error:"Unauthenticated" }, { status:401, headers:noStore }); const { id } = await ctx.params; if (!isUuid(id)) return NextResponse.json({ error:"Invalid analysis id" }, { status:400, headers:noStore }); try { await deleteSavedAnalysis(session.userId, id); return NextResponse.json({ success:true }, { headers:noStore }); } catch { return NextResponse.json({ error:"Unable to delete analysis" }, { status:500, headers:noStore }); } }

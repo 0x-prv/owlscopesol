@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test:auth": "node --test src/test/auth-hardening.test.mjs"
+    "test:auth": "node --test src/test/auth-hardening.test.mjs",
+    "test:phase2": "node --test src/test/phase2.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.2",

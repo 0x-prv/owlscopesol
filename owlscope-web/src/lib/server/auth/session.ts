@@ -10,8 +10,7 @@ export function setSessionCookie(response: NextResponse, token: string, expires:
 export function clearSessionCookie(response: NextResponse) {
   response.cookies.set(SESSION_COOKIE_NAME, "", { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 0 });
 }
-export async function validateSession(request: NextRequest, response?: NextResponse) {
-  const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+export async function validateSessionToken(token: string | undefined, response?: NextResponse) {
   if (!token || token.length < 32 || token.length > 256) { if (token && response) clearSessionCookie(response); return null; }
   const hash = sha256Hex(token);
   const { data, error } = await supabaseAdmin.from("wallet_sessions").select("id,user_id,expires_at,revoked_at,last_seen_at,created_at,wallet_users(id,wallet_address)").eq("session_token_hash", hash).maybeSingle();
@@ -23,6 +22,9 @@ export async function validateSession(request: NextRequest, response?: NextRespo
     if (refreshError) console.error("last_seen refresh failed", { code: refreshError.code });
   }
   return { sessionId: data.id as string, userId: data.user_id as string, walletAddress: user.wallet_address as string, expiresAt: data.expires_at as string };
+}
+export async function validateSession(request: NextRequest, response?: NextResponse) {
+  return validateSessionToken(request.cookies.get(SESSION_COOKIE_NAME)?.value, response);
 }
 export async function revokeSession(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
